@@ -12,7 +12,6 @@ type SavedState = {
   completed?: BooleanMap;
   deferred?: BooleanMap;
   currentDay?: number;
-  dayStep?: number;
 };
 
 type SelectionStep = {
@@ -53,9 +52,7 @@ function uniqueLines(value: string) {
 
 function normalizeAnswers(input: AnswerMap) {
   const next = { ...input };
-  const audiences = uniqueLines(next[keyFor(2, 'audienceCandidates')] ?? '');
   next[keyFor(2, 'selectedAudience')] = uniqueLines(next[keyFor(2, 'selectedAudience')] ?? '')
-    .filter((item) => audiences.includes(item))
     .slice(0, 1)
     .join('\n');
 
@@ -180,44 +177,76 @@ function getFlow(day: Day): FlowStep[] {
   return flow;
 }
 
-function completionCopy(day: number, answers: AnswerMap, partial: boolean) {
-  if (partial && day === 2) {
-    return {
-      title: '你还没确定服务谁，也可以先往下走',
-      body: '下一关先回想最近一次别人来找你时，他说过的具体问题。等你更有感觉了，再从左侧导航回来补这个选择。',
-    };
+function flowStepId(step: FlowStep, index: number) {
+  if (step.kind === 'prompt') return step.prompt.id;
+  if (step.kind === 'clarity') return 'clarity';
+  if (step.kind === 'selection') return step.targetId;
+  return `action-${index}`;
+}
+
+function stepIsSatisfied(dayNumber: number, step: FlowStep, index: number, answers: AnswerMap) {
+  if (step.kind === 'prompt') return hasPromptAnswer(answers[keyFor(dayNumber, step.prompt.id)] ?? '');
+  if (step.kind === 'clarity') {
+    return clarityQuestions.every((question) => Boolean(answers[keyFor(1, question.id)]));
   }
-  if (partial && day === 3) {
-    return {
-      title: '先带着目前想到的问题继续',
-      body: '下一关可以先用最近一次真实求助里的问题试写一句话；素材不够时，之后再从左侧回来补。',
-    };
+  if (step.kind === 'selection') {
+    const candidates = uniqueLines(answers[keyFor(step.sourceDay, step.sourceId)] ?? '');
+    const selected = uniqueLines(answers[keyFor(dayNumber, step.targetId)] ?? '');
+    return selected.some((item) => candidates.includes(item));
   }
-  if (partial) {
-    return {
-      title: '这一关先完成到这里',
-      body: '没填完的地方已经标记为“待补充”。你可以先带着现有答案继续，也可以随时从左侧导航回来补。',
-    };
-  }
-  if (day === 1) {
-    const hasUnclear = clarityQuestions.some((question) => answers[keyFor(1, question.id)] === '不清楚');
-    return {
-      title: hasUnclear ? '你已经找到这段介绍缺少的信息' : '这段介绍目前已经能被听懂',
-      body: hasUnclear
-        ? '先不用急着重写，后面会把这些部分逐项补齐。'
-        : '先保留它，后面继续验证它能不能让人信任并采取行动。',
-    };
-  }
-  if (day === 2) return { title: '你有了一个临时目标客户', body: '下一关只研究他正在为什么事情头疼；如果后面发现选错，随时回来换。' };
-  if (day === 3) return { title: '你找到了客户当前最在意的问题', body: '下一关，把客户和这些问题组合成一句容易听懂的话。' };
-  if (day === 30) return { title: '30 关完成', body: '现在，把第一版放到真实世界里继续测试。' };
-  return { title: `第 ${day} 关完成`, body: '答案已经保存，可以进入下一关。' };
+  return answers[keyFor(dayNumber, flowStepId(step, index))] === 'done';
+}
+
+function reconcileSavedProgress(saved: SavedState) {
+  const answers = normalizeAnswers(saved.answers ?? {});
+  const completed = { ...(saved.completed ?? {}) };
+  const deferred = { ...(saved.deferred ?? {}) };
+
+  days.forEach((day) => {
+    if (!completed[String(day.day)]) return;
+    const dayFlow = getFlow(day);
+
+    // The previous interface stored a completed reality action as deferred=false.
+    // Give that state a durable answer in the single-page worksheet.
+    dayFlow.forEach((step, index) => {
+      if (step.kind !== 'action') return;
+      const id = flowStepId(step, index);
+      const key = keyFor(day.day, id);
+      if (!answers[key] && Object.prototype.hasOwnProperty.call(deferred, key) && deferred[key] === false) {
+        answers[key] = 'done';
+      }
+    });
+
+    if (day.day === 2) {
+      deferred[keyFor(2, 'audienceCandidates')] = false;
+      deferred[keyFor(2, 'selectedAudience')] = !Boolean(answers[keyFor(2, 'selectedAudience')]?.trim());
+      return;
+    }
+
+    dayFlow.forEach((step, index) => {
+      const id = flowStepId(step, index);
+      deferred[keyFor(day.day, id)] = !stepIsSatisfied(day.day, step, index, answers);
+    });
+  });
+
+  return { answers, completed, deferred };
+}
+
+function shortReason(day: Day) {
+  const tailored: Record<number, string> = {
+    1: '先保留你真实在用的介绍，再看陌生人能不能听懂。',
+    2: '先选一个这一轮最想服务的人，后面的练习才有明确对象。',
+    3: '把客户真实会说的问题摊开，才能看出什么最值得解决。',
+    4: '把客户和问题合成一句话，让陌生人马上知道这是否与自己有关。',
+  };
+  if (tailored[day.day]) return tailored[day.day];
+  const firstSentence = day.principle.split('。').find((sentence) => sentence.trim());
+  return firstSentence ? `${firstSentence}。` : day.principle;
 }
 
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
-  const [dayStep, setDayStep] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
@@ -228,7 +257,6 @@ export default function Home() {
   const activeDay = days[currentDay - 1];
   const activeStage = stages[activeDay.stage - 1];
   const flow = useMemo(() => getFlow(activeDay), [activeDay]);
-  const currentStep = flow[dayStep];
   const completedCount = days.filter((day) => completed[String(day.day)]).length;
   const firstIncomplete = days.find((day) => !completed[String(day.day)])?.day ?? 30;
   const activeDayIsPartial = Object.entries(deferred).some(
@@ -241,16 +269,16 @@ export default function Home() {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const saved = JSON.parse(raw) as SavedState;
-        const savedAnswers = normalizeAnswers(saved.answers ?? {});
-        const savedCompleted = saved.completed ?? {};
-        const savedDeferred = saved.deferred ?? {};
+        const reconciled = reconcileSavedProgress(saved);
+        const savedAnswers = reconciled.answers;
+        const savedCompleted = reconciled.completed;
+        const savedDeferred = reconciled.deferred;
         const nextDay = days.find((day) => !savedCompleted[String(day.day)]);
         const resumeDay = nextDay?.day ?? 30;
         setAnswers(savedAnswers);
         setCompleted(savedCompleted);
         setDeferred(savedDeferred);
         setCurrentDay(resumeDay);
-        if (saved.currentDay === resumeDay) setDayStep(saved.dayStep ?? 0);
         if (
           Object.keys(savedAnswers).some((key) => savedAnswers[key])
           || Object.values(savedCompleted).some(Boolean)
@@ -271,9 +299,9 @@ export default function Home() {
     if (!hydrated) return;
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ answers, completed, deferred, currentDay, dayStep }),
+      JSON.stringify({ answers, completed, deferred, currentDay }),
     );
-  }, [answers, completed, currentDay, dayStep, deferred, hydrated]);
+  }, [answers, completed, currentDay, deferred, hydrated]);
 
   useEffect(() => {
     if (!levelsOpen) return;
@@ -293,19 +321,23 @@ export default function Home() {
     const isFuturePreview = dayNumber > firstIncomplete && !completed[String(dayNumber)];
     setCurrentDay(dayNumber);
     setPreviewMode(isFuturePreview);
-    setDayStep(0);
     setLevelsOpen(false);
     setView('day');
     window.scrollTo({ top: 0 });
   };
 
   const setAnswer = (id: string, value: string) => {
+    const previousValue = answers[keyFor(currentDay, id)] ?? '';
+    const downstreamStart =
+      currentDay === 2 && id === 'selectedAudience' && previousValue.trim() !== value.trim()
+        ? 3
+        : currentDay === 3 && ['problemCandidates', 'topProblems'].includes(id) && previousValue !== value
+          ? 4
+          : currentDay === 4 && ['focusProblem', 'valueVersions', 'selectedValue'].includes(id) && previousValue !== value
+            ? 5
+            : null;
     const dependentSelectionWillBeEmpty =
-      (currentDay === 2
-        && id === 'audienceCandidates'
-        && uniqueLines(answers[keyFor(2, 'selectedAudience')] ?? '')
-          .filter((item) => uniqueLines(value).includes(item)).length === 0)
-      || (currentDay === 3
+      (currentDay === 3
         && id === 'problemCandidates'
         && uniqueLines(answers[keyFor(3, 'topProblems')] ?? '')
           .filter((item) => uniqueLines(value).includes(item)).length === 0)
@@ -316,14 +348,6 @@ export default function Home() {
 
     setAnswers((previous) => {
       const next = { ...previous, [keyFor(currentDay, id)]: value };
-
-      if (currentDay === 2 && id === 'audienceCandidates') {
-        const candidates = uniqueLines(value);
-        next[keyFor(2, 'selectedAudience')] = uniqueLines(previous[keyFor(2, 'selectedAudience')] ?? '')
-          .filter((item) => candidates.includes(item))
-          .slice(0, 1)
-          .join('\n');
-      }
 
       if (currentDay === 3 && (id === 'problemCandidates' || id === 'topProblems')) {
         if (id === 'problemCandidates') {
@@ -350,14 +374,24 @@ export default function Home() {
       return next;
     });
     setDeferred((previous) => ({ ...previous, [keyFor(currentDay, id)]: false }));
+    if (downstreamStart) {
+      setCompleted((previous) => {
+        const next = { ...previous };
+        for (let day = downstreamStart; day <= 30; day += 1) next[String(day)] = false;
+        return next;
+      });
+      setDeferred((previous) => {
+        const next = { ...previous };
+        Object.keys(next).forEach((key) => {
+          const day = Number(key.split(':')[0]);
+          if (day >= downstreamStart) delete next[key];
+        });
+        return next;
+      });
+    }
     if (!value.trim() || dependentSelectionWillBeEmpty) {
       setCompleted((previous) => ({ ...previous, [String(currentDay)]: false }));
     }
-  };
-
-  const deferAndAdvance = (id: string) => {
-    setDeferred((previous) => ({ ...previous, [keyFor(currentDay, id)]: true }));
-    advance();
   };
 
   const changeClarity = (id: string, value: string) => {
@@ -366,16 +400,6 @@ export default function Home() {
     if (clarityQuestions.every((question) => Boolean(nextAnswers[keyFor(1, question.id)]))) {
       setDeferred((previous) => ({ ...previous, [keyFor(1, 'clarity')]: false }));
     }
-  };
-
-  const advance = () => {
-    if (dayStep === flow.length - 1) {
-      setCompleted((previous) => ({ ...previous, [String(currentDay)]: true }));
-      setDayStep(flow.length);
-    } else {
-      setDayStep((step) => step + 1);
-    }
-    window.scrollTo({ top: 0 });
   };
 
   const toggleSelection = (step: SelectionStep, item: string) => {
@@ -393,6 +417,32 @@ export default function Home() {
   const startOrContinue = () => {
     if (completedCount === 30) setLevelsOpen(true);
     else navigateToDay(firstIncomplete);
+  };
+
+  const finishCurrentDay = (missingIds: string[]) => {
+    const missing = new Set(missingIds);
+    setDeferred((previous) => {
+      const next = { ...previous };
+      flow.forEach((step, index) => {
+        const id = flowStepId(step, index);
+        next[keyFor(currentDay, id)] = missing.has(id);
+      });
+      return next;
+    });
+    setCompleted((previous) => ({ ...previous, [String(currentDay)]: true }));
+    if (currentDay === 30 && firstIncomplete < 30) {
+      setCurrentDay(firstIncomplete);
+      setPreviewMode(false);
+      setView('day');
+    } else if (currentDay < 30) {
+      const nextDay = currentDay > firstIncomplete ? firstIncomplete : currentDay + 1;
+      setCurrentDay(nextDay);
+      setPreviewMode(false);
+      setView('day');
+    } else {
+      setView('overview');
+    }
+    window.scrollTo({ top: 0 });
   };
 
   if (!hydrated) return <main className="mvp-home" aria-busy="true" />;
@@ -498,14 +548,6 @@ export default function Home() {
     );
   }
 
-  const completion = completionCopy(currentDay, answers, activeDayIsPartial);
-  const isFinishedScreen = dayStep >= flow.length;
-  const backFromStep = () => {
-    if (dayStep) setDayStep((step) => step - 1);
-    else if (currentDay > 1) navigateToDay(currentDay - 1);
-    else setView('overview');
-  };
-
   return (
     <main className="mvp-day">
       <DaySidebar
@@ -528,103 +570,59 @@ export default function Home() {
         </div>
 
         <div className="day-scroll">
+          <div className="day-sheet">
           <section className="day-orientation">
             <div className="day-kicker-row">
               <span>阶段 0{activeStage.id} · {activeStage.shortName}</span>
               {activeDayIsPartial && <strong>待补充</strong>}
             </div>
-            <h1>第 {currentDay} 关 · {activeDay.title}</h1>
-            <div className="day-why">
-              <span>为什么做这一步</span>
-              <p>{activeDay.principle}</p>
-            </div>
-            <div className="day-result">
-              <span>这一关的目标</span>
-              <strong>{activeDay.output}</strong>
+            <h1>{activeDay.title}</h1>
+            <div className="day-orientation-copy">
+              <p>{shortReason(activeDay)}</p>
+              <strong>完成后：{activeDay.output}</strong>
             </div>
           </section>
 
           <section className="day-content">
             {previewMode ? (
               <PreviewDay day={activeDay} flow={flow} currentDay={firstIncomplete} onReturn={() => navigateToDay(firstIncomplete)} />
-            ) : isFinishedScreen ? (
-              <div className="completion-message">
-                <span className={activeDayIsPartial ? 'completion-mark is-partial' : 'completion-mark'}>
-                  {activeDayIsPartial ? '…' : '✓'}
-                </span>
-                <h1>{completion.title}</h1>
-                <p>{completion.body}</p>
-                <div className="completion-actions">
-                  {currentDay > 1 && (
-                    <button className="secondary-button" type="button" onClick={() => navigateToDay(currentDay - 1)}>
-                      返回第 {currentDay - 1} 关
-                    </button>
-                  )}
-                  <button
-                    className="main-button"
-                    type="button"
-                    onClick={() => {
-                      if (currentDay < 30) navigateToDay(currentDay + 1);
-                      else setView('overview');
-                    }}
-                  >
-                    {currentDay < 30 ? `进入第 ${currentDay + 1} 关` : '回到首页'}
-                  </button>
-                </div>
-              </div>
-            ) : currentStep?.kind === 'prompt' ? (
-              <PromptQuestion
-                day={currentDay}
-                prompt={currentStep.prompt}
-                value={answers[keyFor(currentDay, currentStep.prompt.id)] ?? ''}
-                carryText={
-                  currentDay === 2
-                    ? answers[keyFor(1, 'currentIntro')] ?? ''
-                    : currentDay === 3
-                      ? answers[keyFor(2, 'selectedAudience')] ?? ''
-                      : currentDay === 4
-                        ? [
-                            answers[keyFor(2, 'selectedAudience')] ?? '',
-                            answers[keyFor(4, 'focusProblem')] ? `当前问题：${answers[keyFor(4, 'focusProblem')]}` : '',
-                          ].filter(Boolean).join('\n')
-                        : ''
-                }
-                onChange={(value) => setAnswer(currentStep.prompt.id, value)}
-                onBack={backFromStep}
-                onConfirm={advance}
-                onDefer={() => deferAndAdvance(currentStep.prompt.id)}
-              />
-            ) : currentStep?.kind === 'clarity' ? (
-              <ClarityQuestion
-                answers={answers}
+            ) : currentDay === 1 ? (
+              <DayOneSinglePage
                 intro={answers[keyFor(1, 'currentIntro')] ?? ''}
-                onChange={changeClarity}
-                onBack={() => setDayStep((step) => step - 1)}
-                onConfirm={advance}
-                onDefer={() => deferAndAdvance('clarity')}
-              />
-            ) : currentStep?.kind === 'selection' ? (
-              <ChooseQuestion
-                step={currentStep}
-                candidates={uniqueLines(answers[keyFor(currentStep.sourceDay, currentStep.sourceId)] ?? '')}
-                selected={uniqueLines(answers[keyFor(currentDay, currentStep.targetId)] ?? '')}
-                onToggle={(item) => toggleSelection(currentStep, item)}
-                onBack={backFromStep}
-                onConfirm={advance}
-                onDefer={() => deferAndAdvance(currentStep.targetId)}
-              />
-            ) : currentStep?.kind === 'action' ? (
-              <ActionQuestion
-                text={currentStep.text}
-                onBack={backFromStep}
-                onConfirm={() => {
-                  setDeferred((previous) => ({ ...previous, [keyFor(currentDay, `action-${dayStep}`)]: false }));
-                  advance();
+                answers={answers}
+                onIntroChange={(value) => setAnswer('currentIntro', value)}
+                onClarityChange={changeClarity}
+                onSubmit={() => {
+                  const missing: string[] = [];
+                  if (!answers[keyFor(1, 'currentIntro')]?.trim()) missing.push('currentIntro');
+                  if (!clarityQuestions.every((question) => answers[keyFor(1, question.id)])) missing.push('clarity');
+                  finishCurrentDay(missing);
                 }}
-                onDefer={() => deferAndAdvance(`action-${dayStep}`)}
               />
-            ) : null}
+            ) : currentDay === 2 ? (
+              <DayTwoSinglePage
+                selectedAudience={answers[keyFor(2, 'selectedAudience')] ?? ''}
+                candidates={answers[keyFor(2, 'audienceCandidates')] ?? ''}
+                previousIntro={answers[keyFor(1, 'currentIntro')] ?? ''}
+                onAudienceChange={(value) => setAnswer('selectedAudience', value)}
+                onCandidatesChange={(value) => setAnswer('audienceCandidates', value)}
+                onSubmit={() => {
+                  const selected = answers[keyFor(2, 'selectedAudience')]?.trim() ?? '';
+                  finishCurrentDay(selected ? [] : ['selectedAudience']);
+                }}
+              />
+            ) : (
+              <DayWorksheet
+                day={activeDay}
+                flow={flow}
+                answers={answers}
+                onAnswer={setAnswer}
+                onToggleSelection={toggleSelection}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
+            )}
           </section>
+          </div>
         </div>
       </section>
 
@@ -640,270 +638,306 @@ export default function Home() {
   );
 }
 
-function PromptQuestion({
-  day,
-  prompt,
-  value,
-  carryText,
-  onChange,
-  onBack,
-  onConfirm,
-  onDefer,
+function DayOneSinglePage({
+  intro,
+  answers,
+  onIntroChange,
+  onClarityChange,
+  onSubmit,
 }: {
-  day: number;
-  prompt: Prompt;
-  value: string;
-  carryText: string;
-  onChange: (value: string) => void;
-  onBack: () => void;
-  onConfirm: () => void;
-  onDefer: () => void;
+  intro: string;
+  answers: AnswerMap;
+  onIntroChange: (value: string) => void;
+  onClarityChange: (id: string, value: string) => void;
+  onSubmit: () => void;
 }) {
-  const [showFallback, setShowFallback] = useState(false);
-  const valid = hasPromptAnswer(value);
-  const lines = uniqueLines(value).length;
-  const example = promptExample(day, prompt);
-  const title = day === 1 && prompt.id === 'currentIntro'
-    ? '把你平时真实会说的那一段写下来'
-    : prompt.label;
-  const countCopy = prompt.targetCount
-    ? lines
-      ? lines < prompt.targetCount
-        ? `已写 ${lines} 条 · 建议继续想到 ${prompt.targetCount} 条`
-        : `已写 ${lines} 条`
-      : `建议尝试想到 ${prompt.targetCount} 条`
-    : prompt.minChars || prompt.maxChars
-      ? `已经写了 ${value.length} 字；建议字数只用于帮助控制篇幅，不影响继续。`
-      : '';
-  const confirmLabel = day === 1
-    ? '用路人的眼光看一遍 →'
-    : prompt.targetCount && lines < prompt.targetCount
-      ? `先带着这 ${lines} 条继续 →`
-      : day === 2
-        ? '从这些候选里选一个 →'
-        : '保存并继续 →';
+  const judgmentsReady = clarityQuestions.every((question) => answers[keyFor(1, question.id)]);
+  const partial = !intro.trim() || !judgmentsReady;
   return (
-    <>
-      <button className="back-link" type="button" onClick={onBack}>← {day > 1 ? '上一关或上一步' : '返回'}</button>
-      <span className="question-label">现在做什么</span>
-      <h1>{title}</h1>
-      {prompt.helper && <p className="question-intro">{prompt.helper}</p>}
-      {carryText && (
-        <div className="carry-card">
-          <span>{day === 2 ? '你上一关写的介绍' : day === 3 ? '这一轮先服务的人' : '前面已经确定的方向'}</span>
-          <p>「{carryText}」</p>
-          <small>
-            {day === 2
-              ? '里面如果已经出现某类人，可以先把他写成第一个候选。'
-              : day === 3
-                ? '下面只围绕这类人正在经历的具体问题来写。'
-                : '直接使用这些答案，不需要重新回忆或重新输入。'}
-          </small>
-        </div>
-      )}
-      {example && (
-        <div className="example-card">
-          <span>例如</span>
-          <p>{example}</p>
-          {day === 1 && <small>这不是标准答案。你平时怎么说，就怎么写。</small>}
-        </div>
-      )}
-      <label className="sr-only" htmlFor={`prompt-${day}-${prompt.id}`}>{title}</label>
-      {prompt.mode === 'text' ? (
-        <input
-          id={`prompt-${day}-${prompt.id}`}
-          type="text"
-          value={value}
-          placeholder={prompt.placeholder}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      ) : (
-        <textarea
-          id={`prompt-${day}-${prompt.id}`}
-          value={value}
-          placeholder={day === 1 ? '把你平时最常用的介绍写在这里' : prompt.placeholder}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-      {countCopy && <p className="input-count">{countCopy}</p>}
-      <details className="stuck-help">
-        <summary>写不出来？从这里开始</summary>
-        <ul>
-          {stuckHelp(day, prompt).map((item) => <li key={item}>{item}</li>)}
-        </ul>
-      </details>
-      {day === 2 && showFallback && (
-        <div className="fallback-card">
-          <span>那就先回答一个更简单的问题</span>
-          <strong>最近一次有人请你帮忙，他大概是什么人？</strong>
-          <p>不知道职业也没关系，可以写：“刚开始做副业、来问我怎么起步的朋友。”</p>
-          <label className="sr-only" htmlFor="day-2-fallback">最近一次请你帮忙的人</label>
-          <input
-            id="day-2-fallback"
-            type="text"
-            value={value}
-            placeholder="例如：刚开始做副业、来问我怎么起步的朋友"
-            onChange={(event) => onChange(event.target.value)}
+    <div className="single-day-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>你平时是怎样介绍自己的？</h2>
+          <p>把你平时真实会说的版本写下来，不需要先优化。</p>
+          <label className="sr-only" htmlFor="day-one-intro">你平时的自我介绍</label>
+          <textarea
+            id="day-one-intro"
+            value={intro}
+            placeholder="例如：我以前做产品，现在做咨询，也会写一些关于个人成长和商业的内容。"
+            onChange={(event) => onIntroChange(event.target.value)}
           />
         </div>
-      )}
-      <div className="step-actions">
-        {!valid && (
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={day === 2 && !showFallback ? () => setShowFallback(true) : onDefer}
-          >
-            {day === 2
-              ? showFallback ? '仍然想不到，标记待补充' : '换个更简单的问题'
-              : '暂时写不出，标记待补充'}
-          </button>
-        )}
-        {valid && <button className="main-button" type="button" onClick={onConfirm}>{confirmLabel}</button>}
+      </section>
+
+      <section className="single-task-block clarity-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>请站在一个路人的角度看一下</h2>
+          <p>只看这段介绍，不替自己补充。需要猜或需要追问，就选“不清楚”。</p>
+          <div className="clarity-list">
+            {clarityQuestions.map((question, index) => {
+              const value = answers[keyFor(1, question.id)] ?? '';
+              return (
+                <fieldset key={question.id}>
+                  <legend>{index + 1}. {question.label}</legend>
+                  <div>
+                    {['清楚', '不清楚'].map((option) => (
+                      <button
+                        type="button"
+                        key={option}
+                        className={value === option ? 'choice-button selected' : 'choice-button'}
+                        aria-pressed={value === option}
+                        onClick={() => onClarityChange(question.id, option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit">
+        <p>{partial ? '没填完也可以继续；未完成的部分会标记为待补充。' : '这一关已经填写完整。'}</p>
+        <button className="main-button" type="button" onClick={onSubmit}>
+          {partial ? '先保存，进入第 2 关 →' : '完成本关，进入第 2 关 →'}
+        </button>
       </div>
-    </>
+    </div>
   );
 }
 
-function ClarityQuestion({
-  answers,
-  intro,
-  onChange,
-  onBack,
-  onConfirm,
-  onDefer,
+function DayTwoSinglePage({
+  selectedAudience,
+  candidates,
+  previousIntro,
+  onAudienceChange,
+  onCandidatesChange,
+  onSubmit,
 }: {
-  answers: AnswerMap;
-  intro: string;
-  onChange: (id: string, value: string) => void;
-  onBack: () => void;
-  onConfirm: () => void;
-  onDefer: () => void;
+  selectedAudience: string;
+  candidates: string;
+  previousIntro: string;
+  onAudienceChange: (value: string) => void;
+  onCandidatesChange: (value: string) => void;
+  onSubmit: () => void;
 }) {
-  const ready = clarityQuestions.every((question) => Boolean(answers[keyFor(1, question.id)]));
+  const candidateItems = uniqueLines(candidates);
+  const hasDirection = Boolean(selectedAudience.trim());
   return (
-    <>
-      <button className="back-link" type="button" onClick={onBack}>← 返回修改</button>
-      <span className="question-label">现在做什么</span>
-      <h1>只看这段话，不替自己补充</h1>
-      <p className="question-intro">需要猜、需要追问，或者你自己也拿不准，都选“不清楚”。这不是给你的能力打分。</p>
-      <blockquote className="intro-preview">{intro}</blockquote>
-      <div className="clarity-list">
-        {clarityQuestions.map((question, index) => {
-          const value = answers[keyFor(1, question.id)] ?? '';
-          return (
-            <fieldset key={question.id}>
-              <legend>{index + 1}. {question.label}</legend>
-              <div>
-                {['清楚', '不清楚'].map((option) => (
+    <div className="single-day-form day-two-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>这一轮，你最想服务谁？</h2>
+          <p>不用一次确定终身定位。先写一个你真实接触过、问题正在发生、你也能帮到的人。</p>
+          <label className="sr-only" htmlFor="day-two-audience">这一轮想服务的人</label>
+          <input
+            id="day-two-audience"
+            type="text"
+            value={selectedAudience}
+            placeholder="例如：准备从公司转向自由职业、正在寻找第一批客户的人"
+            onChange={(event) => onAudienceChange(event.target.value)}
+          />
+
+          <details className="worksheet-help">
+            <summary>还拿不准？先列几个候选</summary>
+            <p>每行写一类人。10 个只是帮助你打开思路；写好后点一下其中一项，把它设为本轮对象。</p>
+            <textarea
+              value={candidates}
+              placeholder="准备从公司转向自由职业的人\n已经开始提供咨询的独立顾问"
+              onChange={(event) => onCandidatesChange(event.target.value)}
+            />
+            {candidateItems.length > 0 && (
+              <div className="candidate-chips">
+                {candidateItems.map((item) => (
                   <button
                     type="button"
-                    key={option}
-                    className={value === option ? 'choice-button selected' : 'choice-button'}
-                    aria-pressed={value === option}
-                    onClick={() => onChange(question.id, option)}
+                    key={item}
+                    className={selectedAudience.trim() === item ? 'is-selected' : ''}
+                    aria-pressed={selectedAudience.trim() === item}
+                    onClick={() => onAudienceChange(item)}
                   >
-                    {option}
+                    {item}
                   </button>
                 ))}
               </div>
-            </fieldset>
+            )}
+          </details>
+
+          <details className="worksheet-help">
+            <summary>完全想不到？</summary>
+            <p>最近一次主动找你帮忙的人是谁？他当时处在什么情况？先把这个人写下来。</p>
+          </details>
+
+          {previousIntro && (
+            <details className="worksheet-help">
+              <summary>查看我第 1 关的自我介绍</summary>
+              <p className="saved-answer">{previousIntro}</p>
+            </details>
+          )}
+        </div>
+      </section>
+
+      <div className="single-day-submit">
+        <p>{hasDirection ? '之后的练习会先围绕这类人展开，随时可以回来修改。' : '暂时不确定也可以继续，这一关会标记为待补充。'}</p>
+        <button className="main-button" type="button" onClick={onSubmit}>
+          {hasDirection ? '就先服务这类人，进入第 3 关 →' : '暂时不确定，进入第 3 关 →'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayWorksheet({
+  day,
+  flow,
+  answers,
+  onAnswer,
+  onToggleSelection,
+  onSubmit,
+}: {
+  day: Day;
+  flow: FlowStep[];
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onToggleSelection: (step: SelectionStep, item: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const missingIds = flow.flatMap((step, index) => {
+    const id = flowStepId(step, index);
+    return stepIsSatisfied(day.day, step, index, answers) ? [] : [id];
+  });
+  const carried = day.day === 3
+    ? answers[keyFor(2, 'selectedAudience')] ?? ''
+    : day.day === 4
+      ? [answers[keyFor(2, 'selectedAudience')] ?? '', answers[keyFor(3, 'topProblems')] ?? ''].filter(Boolean).join('\n')
+      : '';
+
+  return (
+    <div className="single-day-form worksheet-form">
+      {carried && (
+        <details className="worksheet-help carried-answer">
+          <summary>查看前面已经确定的方向</summary>
+          <p className="saved-answer">{carried}</p>
+        </details>
+      )}
+
+      {flow.map((step, index) => {
+        const number = String(index + 1).padStart(2, '0');
+        if (step.kind === 'prompt') {
+          const value = answers[keyFor(day.day, step.prompt.id)] ?? '';
+          const example = promptExample(day.day, step.prompt);
+          const lineCount = uniqueLines(value).length;
+          return (
+            <section className="single-task-block" key={`${step.prompt.id}-${index}`}>
+              <span className="task-number">{number}</span>
+              <div>
+                <h2>{step.prompt.label}</h2>
+                {step.prompt.helper && <p>{step.prompt.helper}</p>}
+                <label className="sr-only" htmlFor={`worksheet-${day.day}-${step.prompt.id}`}>{step.prompt.label}</label>
+                {step.prompt.mode === 'text' ? (
+                  <input
+                    id={`worksheet-${day.day}-${step.prompt.id}`}
+                    type="text"
+                    value={value}
+                    placeholder={step.prompt.placeholder}
+                    onChange={(event) => onAnswer(step.prompt.id, event.target.value)}
+                  />
+                ) : (
+                  <textarea
+                    id={`worksheet-${day.day}-${step.prompt.id}`}
+                    value={value}
+                    placeholder={step.prompt.placeholder}
+                    onChange={(event) => onAnswer(step.prompt.id, event.target.value)}
+                  />
+                )}
+                {step.prompt.targetCount && (
+                  <p className="worksheet-count">已写 {lineCount} 条 · 建议目标 {step.prompt.targetCount} 条，不影响继续</p>
+                )}
+                {(example || stuckHelp(day.day, step.prompt).length > 0) && (
+                  <details className="worksheet-help">
+                    <summary>需要例子或提示？</summary>
+                    {example && <p className="saved-answer">例如：{example}</p>}
+                    <ul>{stuckHelp(day.day, step.prompt).map((item) => <li key={item}>{item}</li>)}</ul>
+                  </details>
+                )}
+              </div>
+            </section>
           );
-        })}
-      </div>
-      <div className="step-actions">
-        {!ready && <button className="secondary-button" type="button" onClick={onDefer}>暂时判断不出来，先继续</button>}
-        <button className="main-button" type="button" disabled={!ready} onClick={onConfirm}>确认这次判断 →</button>
-      </div>
-    </>
-  );
-}
+        }
 
-function ChooseQuestion({
-  step,
-  candidates,
-  selected,
-  onToggle,
-  onBack,
-  onConfirm,
-  onDefer,
-}: {
-  step: SelectionStep;
-  candidates: string[];
-  selected: string[];
-  onToggle: (item: string) => void;
-  onBack: () => void;
-  onConfirm: () => void;
-  onDefer: () => void;
-}) {
-  const ready = selected.length > 0
-    && selected.length <= step.max
-    && selected.every((item) => candidates.includes(item));
-  return (
-    <>
-      <button className="back-link" type="button" onClick={onBack}>← 返回</button>
-      <span className="question-label">做一个临时选择</span>
-      <h1>{step.title}</h1>
-      {step.helper && <p className="question-intro">{step.helper}</p>}
-      {step.max > 1 && <p className="selection-note">最多选 {step.max} 个；先选 1 个也可以继续。</p>}
-      {step.targetId === 'selectedAudience' && (
-        <div className="choice-guide">
-          <strong>拿不准时，优先选择符合其中两项的人：</strong>
-          <span>你真实接触过 · 他的问题正在发生 · 你确实能帮他往前走一步</span>
-        </div>
-      )}
-      {candidates.length ? (
-        <div className="selection-list">
-          {candidates.map((item, index) => (
-            <button
-              type="button"
-              key={`${item}-${index}`}
-              className={selected.includes(item) ? 'selection-item selected' : 'selection-item'}
-              aria-pressed={selected.includes(item)}
-              onClick={() => onToggle(item)}
-            >
-              <span>{index + 1}</span>
-              <strong>{item}</strong>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-choice">
-          <strong>现在还没有可选内容</strong>
-          <p>可以返回补写，也可以先标记为待补充。后面的关卡不会因此被锁住。</p>
-        </div>
-      )}
-      <p className="input-count">已选 {selected.length}{step.max > 1 ? `，最多 ${step.max} 个` : ''}</p>
-      <div className="step-actions">
-        {!ready && <button className="secondary-button" type="button" onClick={onDefer}>暂时拿不准，先继续</button>}
-        <button className="main-button" type="button" disabled={!ready} onClick={onConfirm}>就先从这里开始 →</button>
-      </div>
-    </>
-  );
-}
+        if (step.kind === 'selection') {
+          const candidates = uniqueLines(answers[keyFor(step.sourceDay, step.sourceId)] ?? '');
+          const selected = uniqueLines(answers[keyFor(day.day, step.targetId)] ?? '');
+          return (
+            <section className="single-task-block" key={`${step.targetId}-${index}`}>
+              <span className="task-number">{number}</span>
+              <div>
+                <h2>{step.title}</h2>
+                {step.helper && <p>{step.helper}</p>}
+                {step.max > 1 && <p className="worksheet-count">最多选 {step.max} 个，先选 1 个也可以。</p>}
+                {candidates.length ? (
+                  <div className="selection-list worksheet-selection">
+                    {candidates.map((item, itemIndex) => (
+                      <button
+                        type="button"
+                        key={`${item}-${itemIndex}`}
+                        className={selected.includes(item) ? 'selection-item selected' : 'selection-item'}
+                        aria-pressed={selected.includes(item)}
+                        onClick={() => onToggleSelection(step, item)}
+                      >
+                        <span>{itemIndex + 1}</span>
+                        <strong>{item}</strong>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-inline">上面的素材还没有内容。可以先填写，也可以把这一项留作待补充。</p>
+                )}
+              </div>
+            </section>
+          );
+        }
 
-function ActionQuestion({
-  text,
-  onBack,
-  onConfirm,
-  onDefer,
-}: {
-  text: string;
-  onBack: () => void;
-  onConfirm: () => void;
-  onDefer: () => void;
-}) {
-  return (
-    <>
-      <button className="back-link" type="button" onClick={onBack}>← 返回</button>
-      <span className="question-label">现实行动</span>
-      <h1>现在去完成这件事</h1>
-      <p className="action-copy">{text}</p>
-      <div className="step-actions">
-        <button className="secondary-button" type="button" onClick={onDefer}>暂时没做，先继续</button>
-        <button className="main-button" type="button" onClick={onConfirm}>我做完了，继续</button>
+        if (step.kind === 'action') {
+          const id = flowStepId(step, index);
+          const done = answers[keyFor(day.day, id)] === 'done';
+          return (
+            <section className="single-task-block" key={id}>
+              <span className="task-number">{number}</span>
+              <div>
+                <h2>在网页之外完成这件事</h2>
+                <p>{step.text}</p>
+                <button
+                  className={done ? 'action-toggle is-done' : 'action-toggle'}
+                  type="button"
+                  aria-pressed={done}
+                  onClick={() => onAnswer(id, done ? '' : 'done')}
+                >
+                  {done ? '✓ 已完成' : '标记为已完成'}
+                </button>
+              </div>
+            </section>
+          );
+        }
+
+        return null;
+      })}
+
+      <div className="single-day-submit">
+        <p>{missingIds.length ? `还有 ${missingIds.length} 项未填写，会标记为待补充。` : '这一关已经填写完整。'}</p>
+        <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
+          {day.day < 30
+            ? missingIds.length ? `先保存，进入第 ${day.day + 1} 关 →` : `完成本关，进入第 ${day.day + 1} 关 →`
+            : '保存第 30 关，回到总览 →'}
+        </button>
       </div>
-    </>
+    </div>
   );
 }
 

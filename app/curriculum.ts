@@ -39,7 +39,7 @@ export const stages: Stage[] = [
     shortName: '被听懂',
     title: '说清你是谁、帮谁、为什么值钱',
     question: '一个陌生人能不能复述你解决什么问题？',
-    output: '一句话介绍、目标人群、3 个核心问题、证据句',
+    output: '一段能被复述的服务介绍',
   },
   {
     id: 2,
@@ -47,7 +47,7 @@ export const stages: Stage[] = [
     shortName: '被相信',
     title: '整理证据、故事和代表作品',
     question: '别人为什么愿意承担选择你的风险？',
-    output: '证据清单、5 段故事、3 个代表作品、信任页',
+    output: '一页让人相信你的证据说明',
   },
   {
     id: 3,
@@ -55,7 +55,7 @@ export const stages: Stage[] = [
     shortName: '持续理解',
     title: '写出 5 篇说明价值的内容',
     question: '你的内容是否持续指向同一个价值？',
-    output: '问题、判断、故事、证据、产品入口 5 类内容',
+    output: '五篇让客户认出问题的内容',
   },
   {
     id: 4,
@@ -63,7 +63,7 @@ export const stages: Stage[] = [
     shortName: '可购买',
     title: '做出一个可以被购买的入口',
     question: '合适的人看完以后，是否知道怎么买？',
-    output: '一页购买入口、两轮现实测试、第一版发布',
+    output: '一页可以直接购买的服务入口',
   },
 ];
 

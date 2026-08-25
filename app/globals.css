@@ -256,7 +256,7 @@ input:focus-visible {
 .stage-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--ink);
+  gap: 22px;
 }
 
 .stage-card {
@@ -264,11 +264,9 @@ input:focus-visible {
   padding: 28px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--ink);
-}
-
-.stage-card:last-child {
-  border-right: 0;
+  border: 2px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
+  transform: translate(-2px, -2px);
 }
 
 .stage-card-1,
@@ -513,13 +511,16 @@ input:focus-visible {
 .day-scroll {
   width: min(1040px, calc(100% - 56px));
   margin: 0 auto;
-  padding: 46px 0 100px;
+  padding: 24px 0 100px;
+}
+
+.day-sheet {
+  border: 1px solid rgba(36, 69, 44, 0.35);
+  background: var(--paper-light);
 }
 
 .day-orientation {
-  padding: clamp(30px, 4vw, 50px);
-  border: 1px solid var(--ink);
-  background: var(--paper-light);
+  padding: 24px 30px;
 }
 
 .day-kicker-row {
@@ -542,12 +543,35 @@ input:focus-visible {
 
 .day-orientation > h1 {
   max-width: 760px;
-  margin: 18px 0 30px;
+  margin: 10px 0 18px;
   font-family: var(--serif);
-  font-size: clamp(32px, 4vw, 46px);
+  font-size: clamp(29px, 3.2vw, 38px);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.2;
+}
+
+.day-orientation-copy {
+  padding-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 24px;
+  align-items: start;
+  border-top: 1px solid var(--ink);
+}
+
+.day-orientation-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.day-orientation-copy strong {
+  padding: 12px 14px;
+  background: var(--pink);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .day-why {
@@ -591,10 +615,184 @@ input:focus-visible {
 
 .day-content {
   width: 100%;
-  margin: 22px auto 0;
-  padding: clamp(30px, 5vw, 58px);
-  border: 1px solid rgba(36, 69, 44, 0.35);
-  background: var(--paper-light);
+  margin: 0;
+  padding: clamp(28px, 4vw, 44px);
+  border-top: 1px solid rgba(36, 69, 44, 0.35);
+}
+
+.single-day-form {
+  display: grid;
+  gap: 34px;
+}
+
+.single-task-block {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.single-task-block + .single-task-block {
+  padding-top: 34px;
+  border-top: 2px solid var(--ink);
+}
+
+.task-number {
+  padding-top: 6px;
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.single-task-block h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.single-task-block h2 + p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.single-task-block textarea,
+.single-task-block input[type="text"] {
+  margin-top: 16px;
+}
+
+.single-task-block textarea {
+  min-height: 150px;
+}
+
+.single-day-submit {
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-top: 2px solid var(--ink);
+}
+
+.single-day-submit p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.worksheet-help {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.worksheet-help + .worksheet-help {
+  margin-top: -1px;
+}
+
+.worksheet-help summary {
+  min-height: 48px;
+  padding: 14px 2px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.worksheet-help > p,
+.worksheet-help > ul {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.worksheet-help > ul {
+  padding-left: 20px;
+}
+
+.worksheet-help textarea {
+  min-height: 132px;
+  margin: 0 0 16px;
+}
+
+.saved-answer {
+  padding: 14px 16px;
+  background: var(--paper);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.candidate-chips {
+  margin: 0 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.candidate-chips button {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.candidate-chips button:hover,
+.candidate-chips button.is-selected {
+  background: var(--ink);
+  color: var(--paper-light);
+}
+
+.carried-answer {
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.carried-answer .saved-answer {
+  padding: 0;
+  background: transparent;
+}
+
+.worksheet-count,
+.empty-inline {
+  margin: 11px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.empty-inline {
+  padding: 16px;
+  border: 1px dashed var(--line);
+  font-weight: 600;
+}
+
+.worksheet-selection {
+  margin-top: 16px;
+}
+
+.action-toggle {
+  min-height: 48px;
+  margin-top: 18px;
+  padding: 0 18px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  font-weight: 800;
+}
+
+.action-toggle.is-done {
+  background: var(--ink);
+  color: var(--paper-light);
 }
 
 .day-content > .back-link {
@@ -758,6 +956,7 @@ input:focus-visible {
 }
 
 .clarity-list {
+  margin-top: 20px;
   border-top: 1px solid var(--ink);
 }
 
@@ -1060,13 +1259,6 @@ input:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .stage-card:nth-child(2) {
-    border-right: 0;
-  }
-
-  .stage-card:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--ink);
-  }
 }
 
 @media (max-width: 900px) {
@@ -1089,6 +1281,16 @@ input:focus-visible {
   .day-scroll {
     width: min(920px, calc(100% - 36px));
     padding-top: 30px;
+  }
+}
+
+@media (max-width: 780px) {
+  .stage-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-card {
+    min-height: 280px;
   }
 }
 
@@ -1162,12 +1364,12 @@ input:focus-visible {
 
   .stage-card {
     min-height: 260px;
-    border-right: 0;
-    border-bottom: 1px solid var(--ink);
+    margin-right: 7px;
+    border: 2px solid var(--ink);
   }
 
   .stage-card:last-child {
-    border-bottom: 0;
+    border-bottom: 2px solid var(--ink);
   }
 
   .overview-actions {
@@ -1207,39 +1409,52 @@ input:focus-visible {
 
   .day-scroll {
     width: min(100% - 24px, 640px);
-    padding: 18px 0 calc(72px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(64px + env(safe-area-inset-bottom));
   }
 
   .day-orientation {
-    padding: 24px 20px;
+    padding: 16px 18px 14px;
   }
 
   .day-orientation > h1 {
-    margin: 14px 0 22px;
-    font-size: 30px;
+    margin: 7px 0 10px;
+    font-size: 26px;
   }
 
-  .day-why,
-  .day-result {
+  .day-orientation-copy {
+    padding-top: 10px;
     display: block;
   }
 
-  .day-why {
-    padding: 18px 0;
+  .day-orientation-copy p {
+    font-size: 13px;
+    line-height: 1.55;
   }
 
-  .day-why p,
-  .day-result strong {
+  .day-orientation-copy strong {
     margin-top: 8px;
+    padding: 8px 10px;
     display: block;
-  }
-
-  .day-result {
-    padding: 16px;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .day-content {
-    padding: 28px 20px 30px;
+    padding: 20px 18px 26px;
+  }
+
+  .single-task-block {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .single-task-block h2 {
+    font-size: 22px;
+  }
+
+  .single-day-submit {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .day-content h1 {
@@ -1247,22 +1462,11 @@ input:focus-visible {
   }
 
   .day-content textarea {
-    min-height: 30dvh;
+    min-height: 160px;
     font-size: 16px;
   }
 
-  .step-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    margin: 24px -20px -30px;
-    padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
-    flex-direction: column-reverse;
-    background: linear-gradient(transparent, var(--paper-light) 18%);
-  }
-
-  .step-actions .main-button,
-  .step-actions .secondary-button,
+  .single-day-submit .main-button,
   .completion-actions .main-button,
   .completion-actions .secondary-button {
     width: 100%;
@@ -1329,5 +1533,9 @@ input:focus-visible {
 
   .level-list strong {
     font-size: 14px;
+  }
+
+  .candidate-chips {
+    display: grid;
   }
 }
