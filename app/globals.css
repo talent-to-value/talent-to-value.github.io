@@ -811,6 +811,38 @@ select:focus-visible {
   margin-top: 16px;
 }
 
+.sentence-formula {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 5px solid var(--pink);
+  background: var(--paper);
+}
+
+.sentence-formula span {
+  display: block;
+  color: #a74868;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.sentence-formula p {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.center-action {
+  display: flex;
+  justify-content: center;
+}
+
+.center-action .secondary-button {
+  margin-top: 16px;
+}
+
 .generate-button:disabled,
 .draft-editor .secondary-button:disabled,
 .statement-copy-button:disabled {
@@ -1066,6 +1098,30 @@ select:focus-visible {
   line-height: 1.7;
 }
 
+.day-six-part > div {
+  padding: 20px 22px;
+  border-left: 5px solid var(--pink);
+}
+
+.day-six-part.tone-rose > div {
+  background: rgba(231, 155, 179, 0.16);
+}
+
+.day-six-part.tone-paper > div {
+  background: var(--paper);
+}
+
+.day-content textarea.auto-grow-textarea {
+  min-height: 74px;
+  overflow-y: hidden;
+  resize: none;
+}
+
+.day-six-part textarea,
+.day-six-part input[type="text"] {
+  background: var(--paper-light);
+}
+
 .problem-field-list {
   margin-top: 18px;
   display: grid;
@@ -1139,6 +1195,26 @@ select:focus-visible {
   bottom: 12px;
   font-size: 11px;
   font-weight: 800;
+}
+
+.optimize-actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.optimize-actions p {
+  margin: 0;
+  color: #9b365b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.optimize-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .submit-only {
@@ -2156,6 +2232,10 @@ select:focus-visible {
     font-size: 16px;
   }
 
+  .day-content textarea.auto-grow-textarea {
+    min-height: 74px;
+  }
+
   .single-day-submit .main-button,
   .completion-actions .main-button,
   .completion-actions .secondary-button {
@@ -2277,6 +2357,10 @@ select:focus-visible {
   .problem-field-list label {
     grid-template-columns: 104px minmax(0, 1fr);
     gap: 8px;
+  }
+
+  .day-six-part > div {
+    padding: 16px;
   }
 
   .week-complete-page {

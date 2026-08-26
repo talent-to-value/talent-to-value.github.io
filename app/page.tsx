@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
 
 type View = 'intro' | 'overview' | 'day' | 'week-complete';
@@ -47,6 +47,32 @@ function uniqueLines(value: string) {
         .map((line) => line.trim())
         .filter(Boolean),
     ),
+  );
+}
+
+function AutoGrowTextarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resize = () => {
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${Math.max(element.scrollHeight, 74)}px`;
+  };
+
+  useEffect(resize, [props.value]);
+
+  return (
+    <textarea
+      {...props}
+      ref={textareaRef}
+      rows={2}
+      className={`auto-grow-textarea ${className}`.trim()}
+      onInput={(event) => {
+        resize();
+        props.onInput?.(event);
+      }}
+    />
   );
 }
 
@@ -319,7 +345,7 @@ export default function Home() {
             ? 5
             : currentDay === 5 && ['evidenceFacts', 'evidenceProblem', 'evidenceReason', 'evidenceSentence'].includes(id) && previousValue !== value
               ? 6
-              : currentDay === 6 && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence', 'firstStatement'].includes(id) && previousValue !== value
+              : currentDay === 6 && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence', 'optimizedStatement', 'firstStatement'].includes(id) && previousValue !== value
                 ? 7
                 : null;
     const dependentSelectionWillBeEmpty =
@@ -356,6 +382,14 @@ export default function Home() {
           .filter((item) => versions.includes(item))
           .slice(0, 1)
           .join('\n');
+      }
+
+      if (
+        currentDay === 6
+        && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence'].includes(id)
+        && previousValue !== value
+      ) {
+        next[keyFor(6, 'optimizedStatement')] = '';
       }
       return next;
     });
@@ -594,7 +628,11 @@ export default function Home() {
               {activeDayIsPartial && <strong>待补充</strong>}
             </div>
             <h1>{activeDay.title}</h1>
-            {![1, 2, 3, 4, 6, 7].includes(currentDay) && (
+            {currentDay === 5 ? (
+              <div className="day-orientation-copy day-orientation-copy-single">
+                <p>{activeDay.principle}</p>
+              </div>
+            ) : ![1, 2, 3, 4, 6, 7].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -961,7 +999,7 @@ function DayFourSinglePage({
 
   const generateSentence = () => {
     if (!canGenerate) return;
-    const sentence = `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他们能够${outcome.trim()}。`;
+    const sentence = `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${outcome.trim()}。`;
     onAnswer('focusProblem', focusProblem);
     onAnswer('generatedDraft', sentence);
   };
@@ -1014,9 +1052,15 @@ function DayFourSinglePage({
             placeholder="例如：完成并发布第一条视频"
             onChange={(event) => onAnswer('valueOutcome', event.target.value)}
           />
-          <button className="secondary-button generate-button" type="button" disabled={!canGenerate} onClick={generateSentence}>
-            生成自我介绍
-          </button>
+          <div className="sentence-formula" aria-label="自我介绍句子公式">
+            <span>句子公式</span>
+            <p>我帮助【本轮服务的人】解决【选择的问题】，让他能够【得到的结果】。</p>
+          </div>
+          <div className="center-action">
+            <button className="secondary-button generate-button" type="button" disabled={!canGenerate} onClick={generateSentence}>
+              生成自我介绍 <span aria-hidden="true">→</span>
+            </button>
+          </div>
 
           {draft && (
             <div className="draft-editor">
@@ -1026,14 +1070,16 @@ function DayFourSinglePage({
                 value={draft}
                 onChange={(event) => onAnswer('generatedDraft', event.target.value)}
               />
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={!draft.trim() || versions.includes(draft.trim()) || versions.length >= 5}
-                onClick={addCandidate}
-              >
-                {versions.length >= 5 ? '候选池已满 5 条' : versions.includes(draft.trim()) ? '已加入候选池' : '加入自我介绍候选池'}
-              </button>
+              <div className="center-action">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!draft.trim() || versions.includes(draft.trim()) || versions.length >= 5}
+                  onClick={addCandidate}
+                >
+                  {versions.length >= 5 ? '候选池已满 5 条' : versions.includes(draft.trim()) ? '已加入候选池' : <>加入候选池 <span aria-hidden="true">→</span></>}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1043,7 +1089,7 @@ function DayFourSinglePage({
         <span className="task-number">04</span>
         <div>
           <h2>自我介绍候选池</h2>
-          <p>候选会按加入顺序排列。点击其中一条，把它设为最终使用的版本。</p>
+          <p>先选一版你最想立刻开始的。</p>
           {versions.length ? (
             <div className="introduction-pool">
               {versions.map((version, index) => (
@@ -1100,7 +1146,7 @@ function DayFiveSinglePage({
     ?? (problemOptions.length === 1 ? problemOptions[0] : '');
   const evidenceReason = answers[keyFor(5, 'evidenceReason')] ?? legacyReason;
   const evidenceSentence = evidenceProblem.trim() && evidenceReason.trim()
-    ? `我可以帮你解决“${evidenceProblem.trim()}”，因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
+    ? `我可以帮你解决“${evidenceProblem.trim()}”的问题，因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
     : '';
   const missingIds = [
     experience.trim() ? '' : 'evidenceFacts',
@@ -1149,7 +1195,7 @@ function DayFiveSinglePage({
             {problemOptions.length ? (
               <select value={evidenceProblem} onChange={(event) => onAnswer('evidenceProblem', event.target.value)}>
                 <option value="">选择一个客户痛点</option>
-                {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
+                {problemOptions.map((problem) => <option value={problem} key={problem}>“{problem}”</option>)}
               </select>
             ) : (
               <input
@@ -1159,7 +1205,7 @@ function DayFiveSinglePage({
                 onChange={(event) => onAnswer('evidenceProblem', event.target.value)}
               />
             )}
-            <span>，因为</span>
+            <span>的问题，因为</span>
             <input
               type="text"
               value={evidenceReason}
@@ -1192,6 +1238,8 @@ function DaySixSinglePage({
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeError, setOptimizeError] = useState('');
   const earlierProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
   const valueLine = answers[keyFor(6, 'statementValue')]
     ?? answers[keyFor(4, 'selectedValue')]
@@ -1206,21 +1254,55 @@ function DaySixSinglePage({
   const evidence = answers[keyFor(6, 'statementEvidence')]
     ?? answers[keyFor(5, 'evidenceSentence')]
     ?? '';
+  const optimizedStatement = answers[keyFor(6, 'optimizedStatement')] ?? '';
   const filledProblems = problemValues.map((item) => item.trim()).filter(Boolean);
   const assembled = [
     valueLine.trim(),
-    fitAudience.trim() ? `这项服务适合${fitAudience.trim()}。` : '',
-    filledProblems.length ? `他们常遇到的问题是：${filledProblems.join('；')}。` : '',
+    fitAudience.trim() ? `适合：${fitAudience.trim()}` : '',
+    filledProblems.length ? `常见卡点：${filledProblems.join('；')}` : '',
     evidence.trim(),
   ].filter(Boolean).join('\n');
+  const displayedStatement = optimizedStatement.trim() || assembled;
   const complete = Boolean(valueLine.trim() && fitAudience.trim() && filledProblems.length && evidence.trim());
+
+  const optimizeStatement = async () => {
+    if (!assembled.trim() || optimizing) return;
+    setOptimizing(true);
+    setOptimizeError('');
+    try {
+      const response = await fetch('/api/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draft: assembled,
+          context: {
+            audience: answers[keyFor(2, 'selectedAudience')] ?? fitAudience,
+            mainProblem: answers[keyFor(4, 'focusProblem')] ?? filledProblems[0] ?? '',
+            outcome: answers[keyFor(4, 'valueOutcome')] ?? '',
+            suitableFor: fitAudience,
+            commonProblems: filledProblems,
+            evidence,
+          },
+        }),
+      });
+      const result = await response.json() as { optimized?: string; error?: string };
+      if (!response.ok || !result.optimized?.trim()) {
+        throw new Error(result.error || '暂时无法优化，请稍后再试。');
+      }
+      onAnswer('optimizedStatement', result.optimized.trim());
+    } catch (error) {
+      setOptimizeError(error instanceof Error ? error.message : '暂时无法优化，请稍后再试。');
+    } finally {
+      setOptimizing(false);
+    }
+  };
 
   const saveAndContinue = () => {
     onAnswer('statementValue', valueLine);
     onAnswer('statementFit', fitAudience);
     problemValues.forEach((problem, index) => onAnswer(`statementProblem${index + 1}`, problem));
     onAnswer('statementEvidence', evidence);
-    onAnswer('firstStatement', assembled);
+    onAnswer('firstStatement', displayedStatement);
     onSubmit(complete ? [] : ['firstStatement']);
   };
 
@@ -1230,11 +1312,11 @@ function DaySixSinglePage({
         <p>让我们一起看看目前你的答案，你可以进行措辞上的优化。</p>
       </section>
 
-      <section className="single-task-block">
+      <section className="single-task-block day-six-part tone-rose">
         <span className="task-number">01</span>
         <div>
           <h2>我帮谁、解决什么，让他能做到什么</h2>
-          <textarea
+          <AutoGrowTextarea
             value={valueLine}
             placeholder="我帮……，解决……，让他能……"
             onChange={(event) => onAnswer('statementValue', event.target.value)}
@@ -1242,11 +1324,11 @@ function DaySixSinglePage({
         </div>
       </section>
 
-      <section className="single-task-block">
+      <section className="single-task-block day-six-part tone-paper">
         <span className="task-number">02</span>
         <div>
           <h2>这项服务具体适合谁？</h2>
-          <textarea
+          <AutoGrowTextarea
             value={fitAudience}
             placeholder="例如：已经有服务经验和案例，但陌生客户仍看不懂他与同行有什么不同的独立顾问"
             onChange={(event) => onAnswer('statementFit', event.target.value)}
@@ -1254,7 +1336,7 @@ function DaySixSinglePage({
         </div>
       </section>
 
-      <section className="single-task-block">
+      <section className="single-task-block day-six-part tone-rose">
         <span className="task-number">03</span>
         <div>
           <h2>这类客户常带着哪些具体问题来找你？</h2>
@@ -1274,12 +1356,12 @@ function DaySixSinglePage({
         </div>
       </section>
 
-      <section className="single-task-block">
+      <section className="single-task-block day-six-part tone-paper">
         <span className="task-number">04</span>
         <div>
           <h2>为什么是你？</h2>
           <p>这里不写“我很专业”，而是放入第 5 关的事实证据：你做过什么，证明你有能力推进这个问题。</p>
-          <textarea
+          <AutoGrowTextarea
             value={evidence}
             placeholder="例如：我已经为 3 位独立顾问重新整理过服务说明，并保留了修改前后的真实版本"
             onChange={(event) => onAnswer('statementEvidence', event.target.value)}
@@ -1290,8 +1372,19 @@ function DaySixSinglePage({
       <section className="service-statement-result">
         <h2>你的服务说明</h2>
         <div className="assembly-preview">
-          <p>{assembled || '上面的答案会在这里自动拼成一段完整说明。'}</p>
-          <span>{assembled.length} 字</span>
+          <p>{displayedStatement || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+          <span>{displayedStatement.length} 字</span>
+        </div>
+        <div className="optimize-actions">
+          <button
+            className="secondary-button optimize-button"
+            type="button"
+            disabled={!assembled.trim() || optimizing}
+            onClick={optimizeStatement}
+          >
+            {optimizing ? '正在优化…' : '不通顺？点击优化 →'}
+          </button>
+          {optimizeError && <p role="alert">{optimizeError}</p>}
         </div>
       </section>
 
