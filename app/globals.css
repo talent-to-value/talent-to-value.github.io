@@ -27,7 +27,8 @@ body {
 
 button,
 textarea,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -41,7 +42,8 @@ button:not(:disabled) {
 
 button:focus-visible,
 textarea:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid var(--pink);
   outline-offset: 3px;
 }
@@ -750,6 +752,169 @@ input:focus-visible {
   color: var(--paper-light);
 }
 
+.answer-row {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: minmax(160px, 0.34fr) minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.answer-row > span,
+.answer-row > strong {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  line-height: 1.6;
+}
+
+.answer-row > span {
+  background: var(--ink);
+  color: var(--paper-light);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.answer-row > strong {
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.compact-answer-row {
+  margin-bottom: 2px;
+}
+
+.compact-task-block .task-number {
+  padding-top: 28px;
+}
+
+.problem-examples {
+  margin-bottom: 18px;
+}
+
+.full-select,
+.evidence-builder select {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 16px;
+  padding: 0 48px 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper-light);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.generate-button {
+  margin-top: 16px;
+}
+
+.generate-button:disabled,
+.draft-editor .secondary-button:disabled,
+.statement-copy-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.draft-editor {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.draft-editor label {
+  margin: 0 !important;
+}
+
+.draft-editor textarea {
+  min-height: 120px;
+  margin-top: 10px;
+}
+
+.draft-editor .secondary-button {
+  margin-top: 14px;
+}
+
+.introduction-pool {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.introduction-candidate {
+  min-height: 74px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--paper-light);
+  text-align: left;
+}
+
+.introduction-candidate > span {
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.introduction-candidate > strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.introduction-candidate > small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.introduction-candidate.selected {
+  border-color: var(--ink);
+  background: var(--pink);
+}
+
+.evidence-builder {
+  margin-top: 20px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto minmax(180px, 0.8fr) auto minmax(220px, 1.2fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.evidence-builder > span {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.evidence-builder select,
+.evidence-builder input[type="text"] {
+  min-height: 52px;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.evidence-preview {
+  margin-top: 14px;
+  padding: 18px 20px;
+  border-left: 5px solid var(--pink);
+  background: var(--paper-light);
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.75;
+}
+
 .context-panel {
   padding: 22px;
   display: grid;
@@ -895,7 +1060,7 @@ input:focus-visible {
 }
 
 .assembly-intro p {
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 1.7;
@@ -904,12 +1069,15 @@ input:focus-visible {
 .problem-field-list {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .problem-field-list label {
   margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
 }
 
 .problem-field-list label > span,
@@ -921,12 +1089,23 @@ input:focus-visible {
 }
 
 .problem-field-list input[type="text"] {
-  margin-top: 8px;
+  margin-top: 0;
   padding: 14px;
   font-size: 15px;
 }
 
+.service-statement-result > h2 {
+  margin: 0 0 16px;
+  font-family: var(--serif);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
 .assembly-preview {
+  position: relative;
+  min-height: 180px;
+  padding: 24px 24px 42px;
   border: 2px solid var(--ink);
   background: var(--pink);
 }
@@ -947,12 +1126,23 @@ input:focus-visible {
 
 .assembly-preview > p {
   margin: 0;
-  padding: 24px 22px;
   white-space: pre-line;
   overflow-wrap: anywhere;
   font-family: var(--serif);
   font-size: 19px;
   line-height: 1.8;
+}
+
+.assembly-preview > span {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.submit-only {
+  justify-content: flex-end;
 }
 
 .test-message-panel,
@@ -993,6 +1183,10 @@ input:focus-visible {
   line-height: 1.8;
 }
 
+.statement-copy-button {
+  margin: 0 22px 22px;
+}
+
 .copy-message {
   margin-top: 18px;
   padding: 18px;
@@ -1014,6 +1208,103 @@ input:focus-visible {
 .copy-message .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.35;
+}
+
+.feedback-record-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.feedback-record {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 34px minmax(150px, 0.34fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  border: 1px solid var(--line);
+  background: var(--paper-light);
+}
+
+.feedback-record > span {
+  padding-top: 14px;
+  color: #a74868;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.feedback-record label {
+  margin: 0 !important;
+}
+
+.feedback-record label > strong {
+  display: block;
+  font-size: 12px;
+}
+
+.feedback-record input[type="text"],
+.feedback-record textarea {
+  margin-top: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.feedback-record textarea {
+  min-height: 92px;
+}
+
+.ai-prompt-panel .copy-message {
+  margin: 0 0 18px;
+}
+
+.week-finish-submit .main-button {
+  min-height: 58px;
+}
+
+.week-complete-page {
+  min-height: 100dvh;
+  padding: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+}
+
+.week-complete-card {
+  width: min(860px, 100%);
+  min-height: 520px;
+  padding: clamp(40px, 7vw, 88px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid rgba(36, 69, 44, 0.22);
+  background: var(--paper-light);
+  box-shadow: 0 18px 50px rgba(36, 48, 39, 0.12);
+}
+
+.week-complete-card > span {
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.week-complete-card h1 {
+  max-width: 650px;
+  margin: 22px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(40px, 7vw, 72px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.week-complete-card p {
+  max-width: 620px;
+  margin: 24px 0 32px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.8;
 }
 
 .tester-list {
@@ -1200,6 +1491,35 @@ input:focus-visible {
   color: #99998f;
 }
 
+.day-content .draft-editor textarea {
+  min-height: 120px;
+  margin-top: 10px;
+}
+
+.day-content .evidence-builder input[type="text"] {
+  min-height: 52px;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.day-content .problem-field-list input[type="text"] {
+  margin-top: 0;
+  padding: 14px;
+  font-size: 15px;
+}
+
+.day-content .feedback-record input[type="text"],
+.day-content .feedback-record textarea {
+  margin-top: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.day-content .feedback-record textarea {
+  min-height: 92px;
+}
+
 .step-actions {
   margin-top: 28px;
   display: flex;
@@ -1337,28 +1657,31 @@ input:focus-visible {
   line-height: 1.7;
 }
 
-.clarity-list fieldset {
+.clarity-item {
   margin: 0;
   padding: 24px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
   border: 0;
   border-bottom: 1px solid var(--line);
 }
 
-.clarity-list legend {
-  width: 100%;
-  margin-bottom: 16px;
+.clarity-item > p {
+  margin: 0;
   font-size: 17px;
   font-weight: 700;
   line-height: 1.55;
 }
 
-.clarity-list fieldset > div {
+.clarity-item > div {
   display: flex;
   gap: 10px;
 }
 
 .choice-button {
-  min-width: 104px;
+  min-width: 86px;
   min-height: 48px;
   padding: 0 18px;
   border: 1px solid var(--ink);
@@ -1852,14 +2175,26 @@ input:focus-visible {
     padding: 16px;
   }
 
-  .clarity-list fieldset > div {
+  .clarity-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .clarity-item > p {
+    font-size: 14px;
+  }
+
+  .clarity-item > div {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
 
   .choice-button {
     min-width: 0;
-    min-height: 52px;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 13px;
   }
 
   .selection-item {
@@ -1904,6 +2239,57 @@ input:focus-visible {
 
   .candidate-chips {
     display: grid;
+  }
+
+  .answer-row {
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .answer-row > span,
+  .answer-row > strong {
+    padding: 14px;
+  }
+
+  .answer-row > strong {
+    font-size: 15px;
+  }
+
+  .evidence-builder {
+    grid-template-columns: 1fr;
+  }
+
+  .introduction-candidate {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .introduction-candidate > small {
+    grid-column: 2;
+  }
+
+  .feedback-record {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  .feedback-record label {
+    grid-column: 2;
+  }
+
+  .problem-field-list label {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .week-complete-page {
+    padding: 16px;
+  }
+
+  .week-complete-card {
+    min-height: calc(100dvh - 32px);
+    padding: 34px 24px;
+  }
+
+  .week-complete-card h1 {
+    font-size: 42px;
   }
 
   .context-panel,

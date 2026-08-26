@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
 
-type View = 'intro' | 'overview' | 'day';
+type View = 'intro' | 'overview' | 'day' | 'week-complete';
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
@@ -117,18 +117,7 @@ function getFlow(day: Day): FlowStep[] {
   }
 
   if (day.day === 2) {
-    return [
-      { kind: 'prompt', prompt: day.prompts[0] },
-      {
-        kind: 'selection',
-        title: '这一轮，先服务谁？',
-        helper: '从刚才写出的候选里先选一个临时方向。其他答案会保留，后面先围绕这一类人展开。',
-        sourceDay: 2,
-        sourceId: 'audienceCandidates',
-        targetId: 'selectedAudience',
-        max: 1,
-      },
-    ];
+    return [{ kind: 'prompt', prompt: day.prompts[1] }];
   }
 
   if (day.day === 3) {
@@ -136,8 +125,8 @@ function getFlow(day: Day): FlowStep[] {
       { kind: 'prompt', prompt: day.prompts[0] },
       {
         kind: 'selection',
-        title: '从中选出最重要的几个问题',
-        helper: '选择客户最着急、最具体，而且你确实能帮忙推进的问题。',
+        title: '选出用户最痛的、你能解决的',
+        helper: '从列出的卡点中选择 1–3 个。',
         sourceDay: 3,
         sourceId: 'problemCandidates',
         targetId: 'topProblems',
@@ -150,7 +139,7 @@ function getFlow(day: Day): FlowStep[] {
     return [
       {
         kind: 'selection',
-        title: '这句话先回应哪个问题？',
+        title: '选择他们正在遇到的问题',
         sourceDay: 3,
         sourceId: 'topProblems',
         targetId: 'focusProblem',
@@ -159,7 +148,7 @@ function getFlow(day: Day): FlowStep[] {
       { kind: 'prompt', prompt: day.prompts[1] },
       {
         kind: 'selection',
-        title: '选出最容易听懂的一版',
+        title: '在候选池中选择最终版',
         sourceDay: 4,
         sourceId: 'valueVersions',
         targetId: 'selectedValue',
@@ -233,13 +222,6 @@ function reconcileSavedProgress(saved: SavedState) {
 }
 
 function shortReason(day: Day) {
-  const tailored: Record<number, string> = {
-    1: '先保留你真实在用的介绍，再看陌生人能不能听懂。',
-    2: '先选一个这一轮最想服务的人，后面的练习才有明确对象。',
-    3: '把客户真实会说的问题摊开，才能看出什么最值得解决。',
-    4: '把客户和问题合成一句话，让陌生人马上知道这是否与自己有关。',
-  };
-  if (tailored[day.day]) return tailored[day.day];
   const firstSentence = day.principle.split('。').find((sentence) => sentence.trim());
   return firstSentence ? `${firstSentence}。` : day.principle;
 }
@@ -333,9 +315,13 @@ export default function Home() {
         ? 3
         : currentDay === 3 && ['problemCandidates', 'topProblems'].includes(id) && previousValue !== value
           ? 4
-          : currentDay === 4 && ['focusProblem', 'valueVersions', 'selectedValue'].includes(id) && previousValue !== value
+          : currentDay === 4 && ['focusProblem', 'valueOutcome', 'generatedDraft', 'valueVersions', 'selectedValue'].includes(id) && previousValue !== value
             ? 5
-            : null;
+            : currentDay === 5 && ['evidenceFacts', 'evidenceProblem', 'evidenceReason', 'evidenceSentence'].includes(id) && previousValue !== value
+              ? 6
+              : currentDay === 6 && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence', 'firstStatement'].includes(id) && previousValue !== value
+                ? 7
+                : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -445,6 +431,22 @@ export default function Home() {
     window.scrollTo({ top: 0 });
   };
 
+  const finishFirstWeek = (missingIds: string[]) => {
+    const missing = new Set(missingIds);
+    setDeferred((previous) => {
+      const next = { ...previous };
+      flow.forEach((step, index) => {
+        const id = flowStepId(step, index);
+        next[keyFor(7, id)] = missing.has(id);
+      });
+      return next;
+    });
+    setCompleted((previous) => ({ ...previous, '7': true }));
+    setPreviewMode(false);
+    setView('week-complete');
+    window.scrollTo({ top: 0 });
+  };
+
   if (!hydrated) return <main className="mvp-home" aria-busy="true" />;
 
   if (view === 'intro') {
@@ -548,6 +550,21 @@ export default function Home() {
     );
   }
 
+  if (view === 'week-complete') {
+    return (
+      <main className="week-complete-page">
+        <section className="week-complete-card">
+          <span>WEEK 01 · COMPLETE</span>
+          <h1>恭喜你完成了第一周的任务</h1>
+          <p>你已经收获了一份可用的服务说明。接下来，我们进入第二周。</p>
+          <button className="main-button" type="button" onClick={() => navigateToDay(8)}>
+            进入第二周 <span aria-hidden="true">→</span>
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="mvp-day">
       <DaySidebar
@@ -577,10 +594,12 @@ export default function Home() {
               {activeDayIsPartial && <strong>待补充</strong>}
             </div>
             <h1>{activeDay.title}</h1>
-            <div className="day-orientation-copy">
-              <p>{shortReason(activeDay)}</p>
-              <strong>完成后：{activeDay.output}</strong>
-            </div>
+            {![1, 2, 3, 4, 6, 7].includes(currentDay) && (
+              <div className="day-orientation-copy">
+                <p>{shortReason(activeDay)}</p>
+                <strong>完成后：{activeDay.output}</strong>
+              </div>
+            )}
           </section>
 
           <section className="day-content">
@@ -611,8 +630,20 @@ export default function Home() {
                   finishCurrentDay(selected ? [] : ['selectedAudience']);
                 }}
               />
+            ) : currentDay === 3 ? (
+              <DayThreeSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
             ) : currentDay === 4 ? (
               <DayFourSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
+            ) : currentDay === 5 ? (
+              <DayFiveSinglePage
                 answers={answers}
                 onAnswer={setAnswer}
                 onSubmit={(missingIds) => finishCurrentDay(missingIds)}
@@ -627,7 +658,7 @@ export default function Home() {
               <DaySevenSinglePage
                 answers={answers}
                 onAnswer={setAnswer}
-                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+                onSubmit={finishFirstWeek}
               />
             ) : (
               <DayWorksheet
@@ -691,14 +722,14 @@ function DayOneSinglePage({
       <section className="single-task-block clarity-block">
         <span className="task-number">02</span>
         <div>
-          <h2>请站在一个路人的角度看一下</h2>
-          <p>只看这段介绍，不替自己补充。需要猜或需要追问，就选“不清楚”。</p>
+          <h2>请站在别人的视角看看</h2>
+          <p>注释：需要猜或者追问，就要选“不清楚”</p>
           <div className="clarity-list">
             {clarityQuestions.map((question, index) => {
               const value = answers[keyFor(1, question.id)] ?? '';
               return (
-                <fieldset key={question.id}>
-                  <legend>{index + 1}. {question.label}</legend>
+                <div className="clarity-item" role="group" aria-label={question.label} key={question.id}>
+                  <p>{index + 1}. {question.label}</p>
                   <div>
                     {['清楚', '不清楚'].map((option) => (
                       <button
@@ -712,7 +743,7 @@ function DayOneSinglePage({
                       </button>
                     ))}
                   </div>
-                </fieldset>
+                </div>
               );
             })}
           </div>
@@ -751,8 +782,8 @@ function DayTwoSinglePage({
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>这一轮，你最想服务谁？</h2>
-          <p>不用一次确定终身定位。先写一个你真实接触过、问题正在发生、你也能帮到的人。</p>
+          <h2>你的客户是什么样的？</h2>
+          <p>不用确定终身定位，就根据你现在的技能，写下来你能帮到的人是什么样的。</p>
           <label className="sr-only" htmlFor="day-two-audience">这一轮想服务的人</label>
           <input
             id="day-two-audience"
@@ -788,8 +819,8 @@ function DayTwoSinglePage({
           </details>
 
           <details className="worksheet-help">
-            <summary>完全想不到？</summary>
-            <p>最近一次主动找你帮忙的人是谁？他当时处在什么情况？先把这个人写下来。</p>
+            <summary>完全想不到怎么办？</summary>
+            <p>你的这项技能为你解决了什么问题？你为什么会拥有这项技能？</p>
           </details>
 
           {previousIntro && (
@@ -811,6 +842,97 @@ function DayTwoSinglePage({
   );
 }
 
+function DayThreeSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const audience = answers[keyFor(2, 'selectedAudience')] ?? '';
+  const candidates = uniqueLines(answers[keyFor(3, 'problemCandidates')] ?? '');
+  const selected = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
+  const toggleProblem = (problem: string) => {
+    const next = selected.includes(problem)
+      ? selected.filter((item) => item !== problem)
+      : selected.length < 3 ? [...selected, problem] : selected;
+    onAnswer('topProblems', next.join('\n'));
+  };
+  const missingIds = [
+    candidates.length ? '' : 'problemCandidates',
+    selected.length ? '' : 'topProblems',
+  ].filter(Boolean);
+
+  return (
+    <div className="single-day-form day-three-form">
+      {audience && (
+        <div className="answer-row compact-answer-row">
+          <span>你正在代入的客户</span>
+          <strong>{audience}</strong>
+        </div>
+      )}
+
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>请你代入这类客户，想想他们的卡点会是什么</h2>
+          <p>结合你想提供的服务，想想对应解决了什么问题。可以多写几个，每行一个问题。</p>
+          <details className="worksheet-help problem-examples">
+            <summary>查看例子</summary>
+            <ul>
+              <li>对自媒体感兴趣但无从下手的人：我不知道可以怎么开始拍视频</li>
+              <li>有目标但不知道怎么执行的人：我不知道可以怎么规划日程</li>
+              <li>想写作但无从写起的人：我想开始练习写作，但是不知道可以写什么</li>
+            </ul>
+          </details>
+          <label className="sr-only" htmlFor="day-three-problems">客户的卡点</label>
+          <textarea
+            id="day-three-problems"
+            value={answers[keyFor(3, 'problemCandidates')] ?? ''}
+            placeholder="每行写一个问题"
+            onChange={(event) => onAnswer('problemCandidates', event.target.value)}
+          />
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>选出用户最痛的、你能解决的</h2>
+          <p>从列出的卡点中选择 1–3 个。</p>
+          {candidates.length ? (
+            <div className="selection-list worksheet-selection">
+              {candidates.map((problem, index) => (
+                <button
+                  type="button"
+                  key={`${problem}-${index}`}
+                  className={selected.includes(problem) ? 'selection-item selected' : 'selection-item'}
+                  aria-pressed={selected.includes(problem)}
+                  onClick={() => toggleProblem(problem)}
+                >
+                  <span>{index + 1}</span>
+                  <strong>{problem}</strong>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-inline">先在上面写下卡点，它们会自动出现在这里。</p>
+          )}
+        </div>
+      </section>
+
+      <div className="single-day-submit">
+        <p>{missingIds.length ? '暂时没写完也可以继续，这一关会标记为待补充。' : '已选出这一轮最值得解决的卡点。'}</p>
+        <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
+          完成本关，进入第 4 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DayFourSinglePage({
   answers,
   onAnswer,
@@ -820,149 +942,126 @@ function DayFourSinglePage({
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
-  const previousAudience = answers[keyFor(2, 'selectedAudience')] ?? '';
-  const audience = answers[keyFor(4, 'valueAudience')] ?? previousAudience;
-  const previousProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
-  const focusProblem = answers[keyFor(4, 'focusProblem')] ?? '';
+  const audience = answers[keyFor(2, 'selectedAudience')] ?? '';
+  const selectedProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
+  const allProblems = uniqueLines(answers[keyFor(3, 'problemCandidates')] ?? '');
+  const problemOptions = selectedProblems.length ? selectedProblems : allProblems;
+  const storedProblem = answers[keyFor(4, 'focusProblem')] ?? '';
+  const focusProblem = storedProblem || (problemOptions.length === 1 ? problemOptions[0] : '');
   const outcome = answers[keyFor(4, 'valueOutcome')] ?? '';
   const versions = uniqueLines(answers[keyFor(4, 'valueVersions')] ?? '');
   const selectedValue = answers[keyFor(4, 'selectedValue')] ?? '';
-  const generatedSentence = audience.trim() && focusProblem.trim() && outcome.trim()
-    ? `我帮${audience.trim()}，解决“${focusProblem.trim()}”的问题，让他能${outcome.trim()}。`
-    : '';
+  const draft = answers[keyFor(4, 'generatedDraft')] ?? selectedValue;
+  const canGenerate = Boolean(audience.trim() && focusProblem.trim() && outcome.trim());
   const missingIds = [
     !focusProblem.trim() ? 'focusProblem' : '',
     !versions.length ? 'valueVersions' : '',
     !selectedValue.trim() || !versions.includes(selectedValue.trim()) ? 'selectedValue' : '',
   ].filter(Boolean);
 
-  const addGeneratedSentence = () => {
-    if (!generatedSentence) return;
-    onAnswer('valueVersions', uniqueLines([...versions, generatedSentence].join('\n')).join('\n'));
+  const generateSentence = () => {
+    if (!canGenerate) return;
+    const sentence = `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他们能够${outcome.trim()}。`;
+    onAnswer('focusProblem', focusProblem);
+    onAnswer('generatedDraft', sentence);
+  };
+
+  const addCandidate = () => {
+    const sentence = draft.trim();
+    if (!sentence || versions.includes(sentence) || versions.length >= 5) return;
+    onAnswer('valueVersions', [...versions, sentence].join('\n'));
   };
 
   return (
     <div className="single-day-form day-four-form">
-      <section className="context-panel" aria-label="前面已经确定的方向">
-        <div>
-          <span>本轮想服务的人</span>
-          <strong>{previousAudience || '第 2 关暂未填写'}</strong>
-        </div>
-        <div>
-          <span>他们正在遇到的问题</span>
-          <strong>{previousProblems.length ? previousProblems.join(' · ') : '第 3 关暂未选择，下面可以直接写'}</strong>
-        </div>
-      </section>
-
-      <section className="single-task-block">
+      <section className="single-task-block compact-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>这句话先回应哪个问题？</h2>
-          <p>可以点选前一关的结果，也可以直接写一个更合适的问题。</p>
-          {previousProblems.length > 0 && (
-            <div className="candidate-chips visible-candidates">
-              {previousProblems.map((problem) => (
-                <button
-                  type="button"
-                  key={problem}
-                  className={focusProblem.trim() === problem ? 'is-selected' : ''}
-                  aria-pressed={focusProblem.trim() === problem}
-                  onClick={() => onAnswer('focusProblem', problem)}
-                >
-                  {problem}
-                </button>
-              ))}
-            </div>
-          )}
-          <label htmlFor="day-four-problem">当前要回应的问题</label>
-          <input
-            id="day-four-problem"
-            type="text"
-            value={focusProblem}
-            placeholder="例如：客户看完介绍，还是不知道我具体能做什么"
-            onChange={(event) => onAnswer('focusProblem', event.target.value)}
-          />
+          <div className="answer-row">
+            <span>本轮最想服务的人</span>
+            <strong>{audience || '第 2 关暂未填写'}</strong>
+          </div>
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>把客户、问题和结果合成一句话</h2>
-          <div className="formula-panel">
-            <strong>句式：我帮【谁】，解决【什么问题】，让他能【得到什么结果】。</strong>
-            <p>例如：我帮已经开始做咨询、但说不清服务价值的独立顾问，解决客户看完介绍仍不知道他能提供什么的问题，让他能写出一段客户看得懂、愿意继续了解的服务说明。</p>
-          </div>
-          <div className="formula-fields">
-            <label>
-              <span>我帮谁</span>
-              <input
-                type="text"
-                value={audience}
-                placeholder="例如：说不清服务价值的独立顾问"
-                onChange={(event) => onAnswer('valueAudience', event.target.value)}
-              />
-            </label>
-            <div className="formula-readonly">
-              <span>他卡在什么问题</span>
-              <strong>{focusProblem || '请先完成上一步'}</strong>
-            </div>
-            <label>
-              <span>你希望他最后能做到什么</span>
-              <input
-                type="text"
-                value={outcome}
-                placeholder="例如：写出一段客户看得懂的服务说明"
-                onChange={(event) => onAnswer('valueOutcome', event.target.value)}
-              />
-            </label>
-          </div>
-          <div className="generated-sentence">
-            <span>工具拼出的句子</span>
-            <p>{generatedSentence || '上面三项填完后，这里会出现一句完整介绍。'}</p>
-            <button className="secondary-button" type="button" disabled={!generatedSentence} onClick={addGeneratedSentence}>
-              把这句加入候选
-            </button>
-          </div>
+          <h2>他们正在遇到的问题</h2>
+          <label className="sr-only" htmlFor="day-four-problem">选择一个客户卡点</label>
+          {problemOptions.length ? (
+            <select
+              id="day-four-problem"
+              className="full-select"
+              value={focusProblem}
+              onChange={(event) => onAnswer('focusProblem', event.target.value)}
+            >
+              {problemOptions.length > 1 && <option value="">请选择一个客户卡点</option>}
+              {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
+            </select>
+          ) : (
+            <p className="empty-inline">第 3 关还没有卡点，请先返回补充。</p>
+          )}
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">03</span>
         <div>
-          <h2>围绕同一个问题，再写几种说法</h2>
-          <p>每行一句。先写 5 个，有余力可以写到 10 个；只有 1 个也可以继续。</p>
+          <h2>让他们得到什么样的结果</h2>
           <textarea
-            value={answers[keyFor(4, 'valueVersions')] ?? ''}
-            placeholder="每行写一个完整说法"
-            onChange={(event) => onAnswer('valueVersions', event.target.value)}
+            value={outcome}
+            placeholder="例如：完成并发布第一条视频"
+            onChange={(event) => onAnswer('valueOutcome', event.target.value)}
           />
-          <p className="worksheet-count">已写 {versions.length} 个 · 建议 5–10 个，不影响继续</p>
+          <button className="secondary-button generate-button" type="button" disabled={!canGenerate} onClick={generateSentence}>
+            生成自我介绍
+          </button>
+
+          {draft && (
+            <div className="draft-editor">
+              <label htmlFor="day-four-draft">生成后可以自行编辑和完善</label>
+              <textarea
+                id="day-four-draft"
+                value={draft}
+                onChange={(event) => onAnswer('generatedDraft', event.target.value)}
+              />
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={!draft.trim() || versions.includes(draft.trim()) || versions.length >= 5}
+                onClick={addCandidate}
+              >
+                {versions.length >= 5 ? '候选池已满 5 条' : versions.includes(draft.trim()) ? '已加入候选池' : '加入自我介绍候选池'}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">04</span>
         <div>
-          <h2>选出一个别人听一遍就能复述的版本</h2>
-          <p>优先选择客户、问题和结果都具体，没有内部术语，而且可以一口气说完的一句。</p>
+          <h2>自我介绍候选池</h2>
+          <p>候选会按加入顺序排列。点击其中一条，把它设为最终使用的版本。</p>
           {versions.length ? (
-            <div className="selection-list worksheet-selection">
+            <div className="introduction-pool">
               {versions.map((version, index) => (
                 <button
                   type="button"
                   key={`${version}-${index}`}
-                  className={selectedValue.trim() === version ? 'selection-item selected' : 'selection-item'}
+                  className={selectedValue.trim() === version ? 'introduction-candidate selected' : 'introduction-candidate'}
                   aria-pressed={selectedValue.trim() === version}
                   onClick={() => onAnswer('selectedValue', version)}
                 >
                   <span>{index + 1}</span>
                   <strong>{version}</strong>
+                  <small>{selectedValue.trim() === version ? '最终选择' : '点击选择'}</small>
                 </button>
               ))}
             </div>
           ) : (
-            <p className="empty-inline">先把上面拼出的句子加入候选，或直接写一个版本。</p>
+            <p className="empty-inline">生成并完善句子后，把它加入候选池。</p>
           )}
         </div>
       </section>
@@ -971,6 +1070,113 @@ function DayFourSinglePage({
         <p>{missingIds.length ? `还有 ${missingIds.length} 项未确定，会标记为待补充。` : '这一关已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
           {missingIds.length ? '先保存，进入第 5 关 →' : '完成本关，进入第 5 关 →'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayFiveSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const experience = answers[keyFor(5, 'evidenceFacts')] ?? '';
+  const problemOptions = uniqueLines([
+    answers[keyFor(3, 'topProblems')] ?? '',
+    answers[keyFor(3, 'problemCandidates')] ?? '',
+    answers[keyFor(4, 'focusProblem')] ?? '',
+  ].join('\n'));
+  const savedSentence = answers[keyFor(5, 'evidenceSentence')] ?? '';
+  const legacyReason = savedSentence.includes('因为')
+    ? savedSentence.split('因为').slice(1).join('因为').replace(/[。.]$/, '')
+    : '';
+  const evidenceProblem = answers[keyFor(5, 'evidenceProblem')]
+    ?? answers[keyFor(4, 'focusProblem')]
+    ?? (problemOptions.length === 1 ? problemOptions[0] : '');
+  const evidenceReason = answers[keyFor(5, 'evidenceReason')] ?? legacyReason;
+  const evidenceSentence = evidenceProblem.trim() && evidenceReason.trim()
+    ? `我可以帮你解决“${evidenceProblem.trim()}”，因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
+    : '';
+  const missingIds = [
+    experience.trim() ? '' : 'evidenceFacts',
+    evidenceSentence ? '' : 'evidenceSentence',
+  ].filter(Boolean);
+
+  const saveAndContinue = () => {
+    onAnswer('evidenceProblem', evidenceProblem);
+    onAnswer('evidenceReason', evidenceReason);
+    onAnswer('evidenceSentence', evidenceSentence);
+    onSubmit(missingIds);
+  };
+
+  return (
+    <div className="single-day-form day-five-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>先列经验素材</h2>
+          <p>列出与服务相关的过往经验，你做过什么、交付过什么。</p>
+          <details className="worksheet-help">
+            <summary>查看经验素材的例子</summary>
+            <ul>
+              <li>我自己从不会拍摄，到持续发布了 100 条视频。</li>
+              <li>我帮助过 3 个朋友完成第一条视频。</li>
+              <li>我整理过一套选题、脚本和拍摄流程。</li>
+            </ul>
+          </details>
+          <label className="sr-only" htmlFor="day-five-experience">经验素材</label>
+          <textarea
+            id="day-five-experience"
+            value={experience}
+            placeholder="每行写一条与服务相关的经验"
+            onChange={(event) => onAnswer('evidenceFacts', event.target.value)}
+          />
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>从素材中选择你的实力担当</h2>
+          <p>注释：先选择客户痛点，再结合你的经验素材完成句子。</p>
+          <div className="evidence-builder">
+            <span>我可以帮你解决</span>
+            {problemOptions.length ? (
+              <select value={evidenceProblem} onChange={(event) => onAnswer('evidenceProblem', event.target.value)}>
+                <option value="">选择一个客户痛点</option>
+                {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={evidenceProblem}
+                placeholder="先写下客户痛点"
+                onChange={(event) => onAnswer('evidenceProblem', event.target.value)}
+              />
+            )}
+            <span>，因为</span>
+            <input
+              type="text"
+              value={evidenceReason}
+              placeholder="结合上面的经验，说清楚为什么是你"
+              onChange={(event) => onAnswer('evidenceReason', event.target.value)}
+            />
+          </div>
+          <div className="evidence-preview">
+            {evidenceSentence || '选好客户痛点并补充经验后，这里会生成一句完整证据。'}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit">
+        <p>{missingIds.length ? '没写完也可以继续，这一关会标记为待补充。' : '你的服务现在有了一句可以被验证的实力证据。'}</p>
+        <button className="main-button" type="button" onClick={saveAndContinue}>
+          保存证据，进入第 6 关 →
         </button>
       </div>
     </div>
@@ -1005,7 +1211,7 @@ function DaySixSinglePage({
     valueLine.trim(),
     fitAudience.trim() ? `这项服务适合${fitAudience.trim()}。` : '',
     filledProblems.length ? `他们常遇到的问题是：${filledProblems.join('；')}。` : '',
-    evidence.trim() ? `我能推进这件事，是因为${evidence.trim()}。` : '',
+    evidence.trim(),
   ].filter(Boolean).join('\n');
   const complete = Boolean(valueLine.trim() && fitAudience.trim() && filledProblems.length && evidence.trim());
 
@@ -1021,15 +1227,13 @@ function DaySixSinglePage({
   return (
     <div className="single-day-form day-six-form">
       <section className="assembly-intro">
-        <strong>这一关不是让你重新想一遍。</strong>
-        <p>前 5 关的答案已经带进来。你只需分别检查四部分，工具会在底部自动拼成一段可以发给别人测试的说明。</p>
+        <p>让我们一起看看目前你的答案，你可以进行措辞上的优化。</p>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
           <h2>我帮谁、解决什么，让他能做到什么</h2>
-          <p>这是第 4 关选中的服务介绍。可以直接修改，不需要重新填空。</p>
           <textarea
             value={valueLine}
             placeholder="我帮……，解决……，让他能……"
@@ -1042,7 +1246,6 @@ function DaySixSinglePage({
         <span className="task-number">02</span>
         <div>
           <h2>这项服务具体适合谁？</h2>
-          <p>“我帮谁”是人群名称；“适合谁”要进一步说清他正处在什么情况，让读者能判断自己是否符合。</p>
           <textarea
             value={fitAudience}
             placeholder="例如：已经有服务经验和案例，但陌生客户仍看不懂他与同行有什么不同的独立顾问"
@@ -1055,7 +1258,6 @@ function DaySixSinglePage({
         <span className="task-number">03</span>
         <div>
           <h2>这类客户常带着哪些具体问题来找你？</h2>
-          <p>这不是产品 FAQ，而是客户真的可能说出口的困扰。第 3 关选中的问题已经带进来；只有 1 个也可以继续。</p>
           <div className="problem-field-list">
             {problemValues.map((problem, index) => (
               <label key={`statement-problem-${index + 1}`}>
@@ -1085,18 +1287,17 @@ function DaySixSinglePage({
         </div>
       </section>
 
-      <section className="assembly-preview">
-        <div>
-          <span>工具为你拼出的测试稿</span>
-          <strong>{assembled.length} 字 · 200 字只是精简建议，不影响继续</strong>
+      <section className="service-statement-result">
+        <h2>你的服务说明</h2>
+        <div className="assembly-preview">
+          <p>{assembled || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+          <span>{assembled.length} 字</span>
         </div>
-        <p>{assembled || '上面的答案会在这里自动拼成一段完整说明。'}</p>
       </section>
 
-      <div className="single-day-submit">
-        <p>{complete ? '四部分都已齐全，可以拿去测试。' : '没填完也可以继续；缺少的部分会标记为待补充。'}</p>
+      <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          {complete ? '保存测试稿，进入第 7 关 →' : '先保存，进入第 7 关 →'}
+          保存服务说明，进入第 7 关 →
         </button>
       </div>
     </div>
@@ -1112,206 +1313,140 @@ function DaySevenSinglePage({
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copiedInitial, setCopiedInitial] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const testStatement = answers[keyFor(6, 'firstStatement')] ?? '';
   const legacyTesterNames = uniqueLines(answers[keyFor(7, 'testers')] ?? '');
   const testers = Array.from({ length: 5 }, (_, index) => {
     const number = index + 1;
+    const legacyFeedback = [
+      answers[keyFor(7, `tester-${number}-who`)] ?? '',
+      answers[keyFor(7, `tester-${number}-problem`)] ?? '',
+      answers[keyFor(7, `tester-${number}-timing`)] ?? '',
+    ].filter(Boolean).join('\n');
     return {
       number,
       name: answers[keyFor(7, `tester-${number}-name`)] ?? legacyTesterNames[index] ?? '',
-      who: answers[keyFor(7, `tester-${number}-who`)] ?? '',
-      problem: answers[keyFor(7, `tester-${number}-problem`)] ?? '',
-      timing: answers[keyFor(7, `tester-${number}-timing`)] ?? '',
+      feedback: answers[keyFor(7, `tester-${number}-feedback`)] ?? legacyFeedback,
     };
   });
-  const sent = answers[keyFor(7, 'action-1')] === 'done';
   const namedCount = testers.filter((tester) => tester.name.trim()).length;
-  const feedbackCount = testers.filter((tester) => (
-    tester.who.trim() && tester.problem.trim() && tester.timing.trim()
-  )).length;
-  const feedbackGap = answers[keyFor(7, 'feedbackGap')] ?? '';
+  const feedbackCount = testers.filter((tester) => tester.name.trim() && tester.feedback.trim()).length;
   const revisedStatement = answers[keyFor(7, 'revisedStatement')] ?? testStatement;
-  const testMessage = `想请你帮我测试一段介绍是否清楚。请只根据下面的文字回答，不用帮我润色，也不用猜我的本意。\n\n${testStatement || '【第 6 关还没有服务说明】'}\n\n1. 你觉得我主要在帮谁？\n2. 你觉得我主要解决什么问题？\n3. 什么情况下你会想到找我？`;
+  const aiPrompt = `我正在优化一份服务说明。请不要直接替我重写，先帮我判断反馈中哪些属于表达不清、哪些只是个人偏好、哪些值得采纳。\n\n我的初稿：\n${testStatement || '【请粘贴你的初稿】'}\n\n测试对象的反馈：\n【请把收集到的反馈复制到这里】\n\n请按下面的顺序回答：\n1. 总结反馈中反复出现的误解；\n2. 区分值得采纳的反馈和不必采纳的个人偏好；\n3. 指出初稿中最需要调整的具体位置；\n4. 给出修改方向，但先不要直接生成最终稿。`;
 
-  const copyTestMessage = async () => {
-    if (!testStatement) return;
+  const copyText = async (text: string, type: 'initial' | 'prompt') => {
+    if (!text || !testStatement) return;
     try {
-      await navigator.clipboard.writeText(testMessage);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      await navigator.clipboard.writeText(text);
+      if (type === 'initial') setCopiedInitial(true);
+      else setCopiedPrompt(true);
+      window.setTimeout(() => {
+        setCopiedInitial(false);
+        setCopiedPrompt(false);
+      }, 1800);
     } catch {
-      setCopied(false);
+      setCopiedInitial(false);
+      setCopiedPrompt(false);
     }
   };
 
   const saveAndContinue = () => {
     const testerNames = testers.map((tester) => tester.name.trim()).filter(Boolean).join('\n');
     const feedback = testers
-      .filter((tester) => tester.name.trim() || tester.who.trim() || tester.problem.trim() || tester.timing.trim())
-      .map((tester) => [
-        `${tester.name.trim() || `测试者 ${tester.number}`}：`,
-        `他认为我在帮谁：${tester.who.trim() || '未记录'}`,
-        `他认为我解决什么：${tester.problem.trim() || '未记录'}`,
-        `什么情况会想到我：${tester.timing.trim() || '未记录'}`,
-      ].join('\n'))
+      .filter((tester) => tester.name.trim() || tester.feedback.trim())
+      .map((tester) => `${tester.name.trim() || `测试对象 ${tester.number}`}：${tester.feedback.trim() || '未记录'}`)
       .join('\n\n');
     onAnswer('testers', testerNames);
     onAnswer('retellFeedback', feedback);
     onAnswer('revisedStatement', revisedStatement);
     const missingIds = [
       namedCount < 5 ? 'testers' : '',
-      !sent ? 'action-1' : '',
       feedbackCount < 5 ? 'retellFeedback' : '',
       !revisedStatement.trim() ? 'revisedStatement' : '',
     ].filter(Boolean);
     onSubmit(missingIds);
   };
 
-  const feedbackColumns = [
-    { title: '他们认为你在帮谁', field: 'who' as const },
-    { title: '他们认为你解决什么', field: 'problem' as const },
-    { title: '什么情况会想到你', field: 'timing' as const },
-  ];
-
   return (
     <div className="single-day-form day-seven-form">
       <section className="test-message-panel">
         <div className="test-message-heading">
           <div>
-            <span>你要测试的第 6 关说明</span>
-            <strong>{testStatement ? '请把同一段文字发给所有人' : '第 6 关暂时没有可用的测试稿'}</strong>
+            <span>你的初版服务说明</span>
+            <strong>{testStatement ? '把这份说明发给身边的人' : '第 6 关暂时没有可用的服务说明'}</strong>
           </div>
         </div>
-        <p className="test-statement">{testStatement || '请先回到第 6 关生成一段服务说明；也可以继续浏览这一关的流程。'}</p>
+        <p className="test-statement">{testStatement || '请先回到第 6 关生成一份服务说明。'}</p>
+        <button className="secondary-button statement-copy-button" type="button" disabled={!testStatement} onClick={() => copyText(testStatement, 'initial')}>
+          {copiedInitial ? '✓ 已复制' : '复制服务说明'}
+        </button>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>把这段测试消息发给 5 个人</h2>
-          <p>不要问“你觉得写得怎么样”。请对方只根据文字回答三个固定问题，发送后不补充背景、不解释本意。</p>
-          <div className="copy-message">
-            <p>{testMessage}</p>
-            <button className="secondary-button" type="button" disabled={!testStatement} onClick={copyTestMessage}>
-              {copied ? '✓ 已复制' : '复制整段测试消息'}
-            </button>
+          <h2>记录测试对象和反馈原话</h2>
+          <div className="feedback-record-list">
+            {testers.map((tester) => (
+              <div className="feedback-record" key={tester.number}>
+                <span>{String(tester.number).padStart(2, '0')}</span>
+                <label>
+                  <strong>测试对象</strong>
+                  <input
+                    type="text"
+                    value={tester.name}
+                    placeholder="例如：小王 / 前同事"
+                    onChange={(event) => onAnswer(`tester-${tester.number}-name`, event.target.value)}
+                  />
+                </label>
+                <label>
+                  <strong>反馈的原话</strong>
+                  <textarea
+                    value={tester.feedback}
+                    placeholder="把对方的反馈原样记录在这里"
+                    onChange={(event) => onAnswer(`tester-${tester.number}-feedback`, event.target.value)}
+                  />
+                </label>
+              </div>
+            ))}
           </div>
-          <button
-            className={sent ? 'action-toggle is-done' : 'action-toggle'}
-            type="button"
-            aria-pressed={sent}
-            onClick={() => onAnswer('action-1', sent ? '' : 'done')}
-          >
-            {sent ? '✓ 已经发给至少 1 个人' : '我已经发给至少 1 个人'}
-          </button>
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>分别记下 5 个人的第一反应</h2>
-          <p>只记原话，不总结、不润色。对方说“没看出来”或“想不到”，也请原样记下。收到 1 份就能开始，目标是 5 份。</p>
-          <div className="tester-list">
-            {testers.map((tester) => {
-              const hasFeedback = Boolean(tester.who.trim() || tester.problem.trim() || tester.timing.trim());
-              const status = !tester.name.trim() ? '未添加' : hasFeedback ? '已记录' : '等回复';
-              return (
-                <details className="tester-card" key={tester.number}>
-                  <summary>
-                    <strong>测试者 {tester.number}{tester.name.trim() ? ` · ${tester.name.trim()}` : ''}</strong>
-                    <span>{status}</span>
-                  </summary>
-                  <div className="tester-fields">
-                    <label>
-                      <span>别名 / 你们的关系</span>
-                      <input
-                        type="text"
-                        value={tester.name}
-                        placeholder="例如：A / 前同事"
-                        onChange={(event) => onAnswer(`tester-${tester.number}-name`, event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      <span>他觉得你主要在帮谁？</span>
-                      <textarea
-                        value={tester.who}
-                        placeholder="粘贴对方原话；没说出来就写“没看出来”"
-                        onChange={(event) => onAnswer(`tester-${tester.number}-who`, event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      <span>他觉得你主要解决什么问题？</span>
-                      <textarea
-                        value={tester.problem}
-                        placeholder="粘贴对方原话"
-                        onChange={(event) => onAnswer(`tester-${tester.number}-problem`, event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      <span>什么情况下他会想到找你？</span>
-                      <textarea
-                        value={tester.timing}
-                        placeholder="粘贴对方原话；想不到就写“想不到具体情况”"
-                        onChange={(event) => onAnswer(`tester-${tester.number}-timing`, event.target.value)}
-                      />
-                    </label>
-                  </div>
-                </details>
-              );
-            })}
-          </div>
-          <p className="worksheet-count">已添加 {namedCount} / 5 人 · 已完整记录 {feedbackCount} / 5 份回复</p>
+          <h2>该如何调整？</h2>
+          <p>先辨别反馈中哪部分可以优化——不是所有优化建议都要采纳。</p>
+          <p>这个环节也可以把初稿、测试对象的反馈一同发给任意大模型，看看 AI 怎么说。</p>
+          <details className="worksheet-help ai-prompt-panel">
+            <summary>打开通用 AI 分析提示词</summary>
+            <div className="copy-message">
+              <p>{aiPrompt}</p>
+              <button className="secondary-button" type="button" disabled={!testStatement} onClick={() => copyText(aiPrompt, 'prompt')}>
+                {copiedPrompt ? '✓ 已复制' : '一键复制提示词'}
+              </button>
+            </div>
+          </details>
         </div>
       </section>
 
-      {feedbackCount > 0 && (
-        <section className="single-task-block">
-          <span className="task-number">03</span>
-          <div>
-            <h2>把不同人的回答放在一起，看哪里传偏了</h2>
-            <p>这里不评分、不算百分比，只把三个问题的原话重新归组，帮你看出反复出现的误解。</p>
-            <div className="feedback-columns">
-              {feedbackColumns.map((column) => (
-                <div key={column.field}>
-                  <strong>{column.title}</strong>
-                  <ul>
-                    {testers.filter((tester) => tester[column.field].trim()).map((tester) => (
-                      <li key={`${column.field}-${tester.number}`}><span>{tester.name || `测试者 ${tester.number}`}</span>{tester[column.field]}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            <label htmlFor="feedback-gap">哪些复述和你原本想表达的意思不一样？</label>
-            <textarea
-              id="feedback-gap"
-              value={feedbackGap}
-              placeholder="例如：他们把我理解成“教人写文案”，但我真正想服务的是“做咨询却说不清价值的人”"
-              onChange={(event) => onAnswer('feedbackGap', event.target.value)}
-            />
-          </div>
-        </section>
-      )}
-
       <section className="single-task-block">
-        <span className="task-number">{feedbackCount > 0 ? '04' : '03'}</span>
+        <span className="task-number">03</span>
         <div>
-          <h2>只修改反复被误解的地方</h2>
-          <p>保留大家已经能复述的部分，只修改连续被漏掉或听偏的内容；不需要把整段推翻重写。</p>
+          <h2>确定最终稿</h2>
           <textarea
             value={revisedStatement}
-            placeholder="第 6 关的测试稿会自动带入这里"
+            placeholder="第 6 关的初版服务说明会自动填入这里"
             onChange={(event) => onAnswer('revisedStatement', event.target.value)}
           />
         </div>
       </section>
 
-      <div className="single-day-submit">
-        <p>{feedbackCount < 5 ? '没收满 5 份也能继续，这一关会标记为待补充。' : '已收齐 5 份复述，可以保存修订版。'}</p>
+      <div className="single-day-submit submit-only week-finish-submit">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          {feedbackCount < 5 ? '先保存，进入第 8 关 →' : '保存修订版，进入第 8 关 →'}
+          这一关完成，我已收获一份可用的服务说明
         </button>
       </div>
     </div>
@@ -1487,7 +1622,7 @@ function PreviewDay({
     <div className="preview-day">
       <span className="preview-badge">预览 · 未完成</span>
       <h1>这一关会怎样进行</h1>
-      <div className="preview-output">完成后会留下：{day.output}</div>
+      {day.day > 7 && <div className="preview-output">完成后会留下：{day.output}</div>}
       <p>你会按下面的顺序完成：</p>
       <ol>
         {labels.map((label, index) => <li key={`${label}-${index}`}>{label}</li>)}

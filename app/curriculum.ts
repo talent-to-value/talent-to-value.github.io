@@ -90,7 +90,7 @@ export const days: Day[] = [
   {
     day: 2,
     stage: 1,
-    title: '这一轮，先服务谁？',
+    title: '你的客户是什么样的？',
     principle: '同一种能力可以服务很多人，但不同的人在意的问题、需要的证据和愿意购买的方式都不一样。今天不是确定终身定位，而是为这一次 30 天测试选一个主要客户；后面的痛点、证据、内容和产品都会先围绕这位客户来做。',
     output: '一组候选客户，以及这一轮先服务的一类人。',
     prep: ['你真实服务过的人', '你愿意长期接触的人', '你已有证据能帮助的人'],
@@ -105,7 +105,7 @@ export const days: Day[] = [
       },
       {
         id: 'selectedAudience',
-        label: '从候选中选择这一轮先服务的人',
+        label: '写下你能帮到的客户是什么样的',
         helper: '其他候选不会丢失；这只是一个可以随时回来修改的临时方向。',
         mode: 'lines',
         targetCount: 1,
@@ -117,23 +117,23 @@ export const days: Day[] = [
   {
     day: 3,
     stage: 1,
-    title: '这类客户现在最想解决什么？',
+    title: '这类客户最想解决什么问题？',
     principle: '昨天确定的是“这次先服务谁”，今天确定的是“这类客户会因为什么具体情况来找你”。先写 5 条真实表达，有余力再写到 10 条，用来看出哪些问题反复出现。',
     output: '5–10 条真实问题，以及其中最值得先解决的 1–3 条。',
     prep: ['昨天确定的目标人群', '过往咨询、评论、聊天中出现过的原话'],
     prompts: [
       {
         id: 'problemCandidates',
-        label: '先写 5 句这类客户真的可能会说的话',
-        helper: '每行一件事，尽量来自聊天、咨询、评论或真实工作。没听过的可以写，但请以【待验证】开头。',
+        label: '请你代入这类客户，想想他们的卡点会是什么',
+        helper: '结合你想提供的服务，想想对应解决了什么问题。可以多写几个，每行一个问题。',
         placeholder: '我不知道怎么介绍自己\n我发了很多内容，但没人来问\n【待验证】每次有人问价格，我都不知道该怎么报价',
         mode: 'lines',
         targetCount: 5,
       },
       {
         id: 'topProblems',
-        label: '从上面选出最值得先解决的 1–3 个',
-        helper: '优先选择：场景具体、对客户足够着急、而且你确实有经验推动事情进展。',
+        label: '选出用户最痛的、你能解决的',
+        helper: '从列出的卡点中选择 1–3 个。',
         mode: 'lines',
         targetCount: 3,
       },
@@ -144,21 +144,21 @@ export const days: Day[] = [
   {
     day: 4,
     stage: 1,
-    title: '写一句让客户马上知道“这和我有关”的介绍',
+    title: '拼接一句与你有关的自我介绍',
     principle: '目标客户和 3 个核心问题已经从前两天带进来。先选一个问题作为主轴，再写一句介绍；它的任务不是讲完整，而是让陌生人迅速判断“这和我的问题有没有关系”。',
     output: '5–10 个说法，以及当前最容易被复述的一版。',
     prep: ['目标客户', '3 个核心问题', '你能帮助客户往前推进的一步'],
     prompts: [
       {
         id: 'focusProblem',
-        label: '从 3 个问题里选择这句话的主轴',
+        label: '选择他们正在遇到的问题',
         helper: '工具会直接使用 Day 3 的选择，不需要重新输入。',
         mode: 'lines',
         targetCount: 1,
       },
       {
         id: 'valueVersions',
-        label: '围绕同一个问题，先写 5 种说法',
+        label: '生成、编辑并加入自我介绍候选池',
         helper: '每行一个。先写 5 个，有余力可以继续写到 10 个；一个也能继续。',
         placeholder: '我帮___，解决___，最终可以___。',
         mode: 'lines',
@@ -166,7 +166,7 @@ export const days: Day[] = [
       },
       {
         id: 'selectedValue',
-        label: '选出当前版本',
+        label: '在候选池中选择最终版',
         helper: '选择最容易被复述的，而不是最宏大或最漂亮的。',
         placeholder: '我帮……',
         mode: 'long',
@@ -178,21 +178,21 @@ export const days: Day[] = [
   {
     day: 5,
     stage: 1,
-    title: '写一句证据',
+    title: '为什么客户想选择你？',
     principle: '“认真、专业、长期主义”无法核验。证据要回答你做过什么，而不是你觉得自己是什么样的人。',
     output: '一句回答“为什么是你”的事实证据。',
     prep: ['做过的项目或产品', '交付物', '公开作品', '长期观察和实际结果'],
     prompts: [
       {
         id: 'evidenceFacts',
-        label: '先列事实',
-        helper: '列出做过、交付过、写过、卖过或长期处理过的事情。',
+        label: '先列经验素材',
+        helper: '列出与服务相关的过往经验，你做过什么、交付过什么。',
         placeholder: '我做过……\n我交付过……\n我长期处理……',
         mode: 'lines',
       },
       {
         id: 'evidenceSentence',
-        label: '把最相关的事实写成一句证据',
+        label: '从素材中选择你的实力担当',
         placeholder: '我能做这件事，是因为……',
         mode: 'long',
       },
@@ -203,14 +203,14 @@ export const days: Day[] = [
   {
     day: 6,
     stage: 1,
-    title: '把前 5 关的答案拼成一段可测试的服务说明',
+    title: '你即将拥有一份服务说明',
     principle: '把前五天的选择拼成一个测试稿。它不是公开定稿，而是能拿到现实里接受反馈的当前版本。',
     output: '不超过 200 字的第一版品牌说明。',
     prep: ['价值句', '目标人群', '3 个问题', '证据句'],
     prompts: [
       {
         id: 'firstStatement',
-        label: '拼成一段完整说明',
+        label: '检查并拼成你的服务说明',
         helper: '顺序：我帮谁、解决什么、让他能什么；适合谁；3 个常见问题；为什么是我。',
         placeholder: '我帮___，解决___，让他能___；我适合服务的人是___……',
         mode: 'long',
@@ -223,34 +223,33 @@ export const days: Day[] = [
   {
     day: 7,
     stage: 1,
-    title: '把服务说明发给 5 个人，看他们实际理解成了什么',
+    title: '现实演练：发给身边 5 个人，看看他们如何理解',
     principle: '介绍是否清楚，不由你自己判断。不要解释，让别人直接复述，现实反馈才会暴露表达偏差。',
     output: '5 份复述反馈，以及一版按反馈修改的介绍。',
     prep: ['Day 6 的第一版说明', '5 位不太熟、但愿意说真话的人'],
     prompts: [
       {
         id: 'testers',
-        label: '列出 5 位测试对象（只记别名）',
+        label: '记录测试对象和反馈原话',
         mode: 'lines',
         targetCount: 5,
         placeholder: 'A / 前同事\nB / 同行……',
       },
       {
         id: 'retellFeedback',
-        label: '记录他们的原话',
+        label: '判断哪些反馈值得采纳',
         helper: '分别问：你觉得我帮谁？解决什么？什么情况下会想到找我？',
         mode: 'long',
         placeholder: 'A 复述为……\nB 认为……',
       },
       {
         id: 'revisedStatement',
-        label: '根据偏差改出下一版',
+        label: '确定最终稿',
         mode: 'long',
         maxChars: 200,
       },
     ],
-    checks: ['测试了 5 人', '没有向测试者解释', '记录的是原话', '按重复偏差修改', '四项周成果已齐'],
-    externalAction: '把说明发给 5 人，收回对服务对象、问题和使用场景的复述。',
+    checks: ['记录了测试对象', '保留了反馈原话', '辨别了值得采纳的反馈', '完成最终稿'],
     sourcePages: '255–257',
   },
   {
