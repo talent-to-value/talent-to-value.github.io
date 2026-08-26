@@ -554,24 +554,24 @@ select:focus-visible {
 }
 
 .day-orientation-copy {
-  padding-top: 16px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-  gap: 24px;
-  align-items: start;
-  border-top: 1px solid var(--ink);
+  padding: 16px 18px;
+  display: block;
+  background: var(--pink);
 }
 
 .day-orientation-copy p {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 14px;
+  font-weight: 700;
   line-height: 1.7;
 }
 
 .day-orientation-copy strong {
-  padding: 12px 14px;
-  background: var(--pink);
+  margin-top: 10px;
+  padding-top: 10px;
+  display: block;
+  border-top: 1px solid rgba(36, 69, 44, 0.45);
   font-size: 13px;
   line-height: 1.55;
 }
@@ -654,8 +654,11 @@ select:focus-visible {
 }
 
 .single-task-block h2 + p {
-  margin: 10px 0 0;
-  color: var(--muted);
+  margin: 12px 0 0;
+  padding: 11px 14px;
+  border-left: 5px solid var(--pink);
+  background: rgba(231, 155, 179, 0.28);
+  color: var(--ink);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -1081,8 +1084,7 @@ select:focus-visible {
 
 .assembly-intro {
   padding: 20px 22px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
+  background: var(--pink);
 }
 
 .assembly-intro strong {
@@ -1093,22 +1095,31 @@ select:focus-visible {
 
 .assembly-intro p {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 14px;
+  font-weight: 700;
   line-height: 1.7;
 }
 
 .day-six-part > div {
   padding: 20px 22px;
-  border-left: 5px solid var(--pink);
+  border: 1px solid var(--ink);
+  border-left: 8px solid var(--pink);
+  background: var(--paper-light);
+  box-shadow: 5px 5px 0 var(--pink);
 }
 
 .day-six-part.tone-rose > div {
-  background: rgba(231, 155, 179, 0.16);
+  background: var(--paper-light);
 }
 
 .day-six-part.tone-paper > div {
-  background: var(--paper);
+  background: var(--paper-light);
+}
+
+.day-six-part h2 {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .day-content textarea.auto-grow-textarea {
@@ -2188,7 +2199,7 @@ select:focus-visible {
   }
 
   .day-orientation-copy {
-    padding-top: 10px;
+    padding: 12px 14px;
     display: block;
   }
 
@@ -2199,7 +2210,7 @@ select:focus-visible {
 
   .day-orientation-copy strong {
     margin-top: 8px;
-    padding: 8px 10px;
+    padding-top: 8px;
     display: block;
     font-size: 12px;
     line-height: 1.45;

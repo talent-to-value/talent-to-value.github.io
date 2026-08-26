@@ -88,7 +88,9 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
         'Content-Type': 'application/json',
+        'User-Agent': 'talent-to-value-tool/1.0',
       },
       body: JSON.stringify({
         model: 'kimi-k2.6',
@@ -115,6 +117,14 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
+      const upstreamError = await response.json().catch(() => null) as {
+        error?: { type?: string; code?: string };
+      } | null;
+      console.error('Kimi optimization failed', {
+        status: response.status,
+        type: upstreamError?.error?.type ?? 'unknown',
+        code: upstreamError?.error?.code ?? 'unknown',
+      });
       return Response.json({ error: '优化服务暂时不可用，请稍后再试。' }, { status: 502 });
     }
 
