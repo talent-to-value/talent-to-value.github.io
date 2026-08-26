@@ -14,8 +14,11 @@ type OptimizeRequest = {
   context?: OptimizeContext;
 };
 
-type MoonshotResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
+type KimiMessageResponse = {
+  content?: Array<{
+    type?: string;
+    text?: string;
+  }>;
 };
 
 const WINDOW_MS = 60_000;
@@ -55,6 +58,12 @@ export async function POST(request: Request) {
 
   const runtimeEnv = env as unknown as Record<string, string | undefined>;
   const apiKey = runtimeEnv.KIMI_API_KEY ?? process.env.KIMI_API_KEY;
+  const baseUrl = (
+    runtimeEnv.KIMI_BASE_URL
+    ?? process.env.KIMI_BASE_URL
+    ?? 'https://api.kimi.com/coding/v1'
+  ).replace(/\/$/u, '');
+  const model = runtimeEnv.KIMI_MODEL ?? process.env.KIMI_MODEL ?? 'kimi-k2.6';
   if (!apiKey) {
     return Response.json({ error: '优化服务尚未配置。' }, { status: 503 });
   }
@@ -84,52 +93,49 @@ export async function POST(request: Request) {
   };
 
   try {
-    const response = await fetch('https://api.kimi.com/coding/v1/chat/completions', {
+    const response = await fetch(`${baseUrl}/messages`, {
       method: 'POST',
+      signal: AbortSignal.timeout(60_000),
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
-        'User-Agent': 'talent-to-value-tool/1.0',
       },
       body: JSON.stringify({
-        model: 'kimi-k2.6',
-        temperature: 1,
+        model,
         max_tokens: 500,
+        system: [
+          '你是一名中文服务产品文案编辑。',
+          '把用户的服务说明改成一段自然、具体、容易理解的中文。',
+          '保留已有事实，不新增成绩、数字、客户或能力。',
+          '删掉重复的人群和问题，不要机械拼接。',
+          '如果材料彼此不一致，以目标客户、主问题和结果为主，只保留与它们自然相关的经验。',
+          '控制在 200 个汉字以内。只返回一段优化后的正文，不要多个版本，不要标题、解释、列表或 Markdown。',
+        ].join('\n'),
         messages: [
-          {
-            role: 'system',
-            content: [
-              '你是一名中文服务产品文案编辑。',
-              '把用户的服务说明改成一段自然、具体、容易理解的中文。',
-              '保留已有事实，不新增成绩、数字、客户或能力。',
-              '删掉重复的人群和问题，不要机械拼接。',
-              '如果材料彼此不一致，以目标客户、主问题和结果为主，只保留与它们自然相关的经验。',
-              '控制在 200 个汉字以内。只返回优化后的正文，不要标题、解释、列表或 Markdown。',
-            ].join('\n'),
-          },
           {
             role: 'user',
             content: `已确认的信息：\n${JSON.stringify(structuredContext, null, 2)}\n\n当前服务说明：\n${draft}`,
           },
         ],
+        ...(model === 'kimi-k2.6' ? { thinking: { type: 'disabled' } } : {}),
       }),
     });
 
     if (!response.ok) {
-      const upstreamError = await response.json().catch(() => null) as {
-        error?: { type?: string; code?: string };
-      } | null;
-      console.error('Kimi optimization failed', {
-        status: response.status,
-        type: upstreamError?.error?.type ?? 'unknown',
-        code: upstreamError?.error?.code ?? 'unknown',
-      });
+      const upstreamError = await response.text().catch(() => '');
+      console.error('Kimi Messages response error', response.status, upstreamError.slice(0, 180));
       return Response.json({ error: '优化服务暂时不可用，请稍后再试。' }, { status: 502 });
     }
 
-    const result = await response.json() as MoonshotResponse;
-    const optimized = result.choices?.[0]?.message?.content?.trim().replace(/^['“”]+|['“”]+$/g, '');
+    const result = await response.json() as KimiMessageResponse;
+    const optimized = result.content
+      ?.filter((block) => block.type === 'text' && block.text)
+      .map((block) => block.text?.trim())
+      .filter(Boolean)
+      .join('\n')
+      .trim()
+      .replace(/^['“”]+|['“”]+$/g, '');
     if (!optimized) {
       return Response.json({ error: '这次没有生成有效结果，请再试一次。' }, { status: 502 });
     }
