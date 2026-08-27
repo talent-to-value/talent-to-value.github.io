@@ -52,6 +52,13 @@ type CognitionRecord = {
   story: string;
 };
 
+type RepresentativeWork = {
+  workId: string;
+  what: string;
+  problem: string;
+  proof: string;
+};
+
 type FlowStep =
   | { kind: 'prompt'; prompt: Prompt }
   | { kind: 'clarity' }
@@ -171,6 +178,40 @@ function parseCognitionRecords(value: string, works: WorkEvidence[]): CognitionR
     // Preserve stories written in the previous single-textarea interface.
   }
   return [{ id: 'cognition-1', workId: works[0]?.id ?? '', story: value }];
+}
+
+function parseRepresentativeWorks(value: string, works: WorkEvidence[]): RepresentativeWork[] {
+  if (value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item) => {
+          if (!item || typeof item !== 'object') return [];
+          const candidate = item as Partial<RepresentativeWork>;
+          const source = works.find((work) => work.id === candidate.workId);
+          if (!source) return [];
+          return [{
+            workId: source.id,
+            what: typeof candidate.what === 'string' && candidate.what.trim() ? candidate.what : source.title,
+            problem: typeof candidate.problem === 'string' && candidate.problem.trim() ? candidate.problem : source.problem,
+            proof: typeof candidate.proof === 'string' && candidate.proof.trim() ? candidate.proof : source.proof,
+          }];
+        }).slice(0, 3);
+      }
+    } catch {
+      // Preserve selections written in the previous free-text interface.
+    }
+  }
+
+  return uniqueLines(value).flatMap((line) => {
+    const source = works.find((work) => line.includes(work.title));
+    return source ? [{
+      workId: source.id,
+      what: source.title,
+      problem: source.problem,
+      proof: source.proof,
+    }] : [];
+  }).slice(0, 3);
 }
 
 function nextRecordId(prefix: string, records: Array<{ id: string }>) {
@@ -349,6 +390,13 @@ function reconcileSavedProgress(saved: SavedState) {
   days.forEach((day) => {
     if (!completed[String(day.day)]) return;
     const dayFlow = getFlow(day);
+
+    if (day.day === 12 || day.day === 14) {
+      Object.keys(deferred).forEach((key) => {
+        if (key.startsWith(`${day.day}:`)) deferred[key] = false;
+      });
+      return;
+    }
 
     // The previous interface stored a completed reality action as deferred=false.
     // Give that state a durable answer in the single-page worksheet.
@@ -581,6 +629,8 @@ export default function Home() {
                       ? 11
                       : currentDay === 11 && id === 'stories' && previousValue !== value
                         ? 12
+                        : currentDay === 13 && ['representativeWorks', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
+                          ? 15
                         : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
@@ -712,6 +762,27 @@ export default function Home() {
     setCompleted((previous) => ({ ...previous, '7': true }));
     setPreviewMode(false);
     setView('week-checklist');
+    window.scrollTo({ top: 0 });
+  };
+
+  const finishCombinedDaysThirteenAndFourteen = (missingIds: string[]) => {
+    const missing = new Set(missingIds);
+    const dayThirteenFlow = getFlow(days[12]);
+    setDeferred((previous) => {
+      const next = { ...previous };
+      dayThirteenFlow.forEach((step, index) => {
+        const id = flowStepId(step, index);
+        next[keyFor(13, id)] = missing.has(id);
+      });
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith('14:')) delete next[key];
+      });
+      return next;
+    });
+    setCompleted((previous) => ({ ...previous, '13': true, '14': true }));
+    setCurrentDay(15);
+    setPreviewMode(false);
+    setView('day');
     window.scrollTo({ top: 0 });
   };
 
@@ -928,7 +999,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -1020,6 +1091,19 @@ export default function Home() {
                 answers={answers}
                 onAnswer={setAnswer}
                 onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
+            ) : currentDay === 12 ? (
+              <DayTwelvePlaceholder onSubmit={() => finishCurrentDay([])} />
+            ) : currentDay === 13 ? (
+              <DayThirteenCombinedPage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={finishCombinedDaysThirteenAndFourteen}
+              />
+            ) : currentDay === 14 ? (
+              <DayFourteenMergedPage
+                onBack={() => navigateToDay(13)}
+                onContinue={() => finishCurrentDay([])}
               />
             ) : (
               <DayWorksheet
@@ -2324,6 +2408,249 @@ function DayElevenSinglePage({
         <button className="main-button" type="button" onClick={() => onSubmit(hasCognition ? [] : ['stories'])}>
           保存，进入第 12 关 →
         </button>
+      </div>
+    </div>
+  );
+}
+
+function DayTwelvePlaceholder({ onSubmit }: { onSubmit: () => void }) {
+  return (
+    <div className="single-day-form blank-day-form">
+      <button className="main-button" type="button" onClick={onSubmit}>
+        跳过第 12 关，进入第 13 关 →
+      </button>
+    </div>
+  );
+}
+
+function DayThirteenCombinedPage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const works = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const selectedWorks = parseRepresentativeWorks(answers[keyFor(13, 'representativeWorks')] ?? '', works);
+  const selectedIds = selectedWorks.map((work) => work.workId);
+  const results = parseResultEvidence(answers[keyFor(9, 'resultEvidence')] ?? '', works);
+  const cognition = parseCognitionRecords(answers[keyFor(11, 'stories')] ?? '', works);
+  const mainProblem = firstFilled(
+    answers[keyFor(4, 'focusProblem')],
+    uniqueLines(answers[keyFor(3, 'topProblems')] ?? '')[0],
+  );
+  const notPromise = answers[keyFor(13, 'notPromise')] ?? '';
+  const canHelp = answers[keyFor(13, 'canHelp')] ?? '';
+  const trustPage = answers[keyFor(13, 'trustPage')] ?? '';
+
+  const saveSelection = (nextSelection: RepresentativeWork[]) => {
+    onAnswer('representativeWorks', JSON.stringify(nextSelection));
+    onAnswer('trustPage', '');
+  };
+
+  const toggleWork = (work: WorkEvidence) => {
+    if (selectedIds.includes(work.id)) {
+      saveSelection(selectedWorks.filter((item) => item.workId !== work.id));
+      return;
+    }
+    if (selectedWorks.length >= 3) return;
+    saveSelection([
+      ...selectedWorks,
+      {
+        workId: work.id,
+        what: work.title,
+        problem: work.problem,
+        proof: work.proof,
+      },
+    ]);
+  };
+
+  const updateSelectedWork = (workId: string, patch: Partial<RepresentativeWork>) => {
+    saveSelection(selectedWorks.map((work) => (
+      work.workId === workId ? { ...work, ...patch } : work
+    )));
+  };
+
+  const updateBoundary = (id: 'notPromise' | 'canHelp', value: string) => {
+    onAnswer(id, value);
+    onAnswer('trustPage', '');
+  };
+
+  const generateTrustPage = () => {
+    const relatedWorks = selectedWorks
+      .map((work) => work.what.trim())
+      .filter(Boolean)
+      .join('、');
+    const changes = selectedWorks
+      .map((work) => results[work.workId]?.trim())
+      .filter(Boolean)
+      .join('；');
+    const judgments = cognition
+      .filter((record) => selectedIds.includes(record.workId))
+      .map((record) => record.story.trim())
+      .filter(Boolean)
+      .join('；');
+    const generated = [
+      `我主要解决的问题：${mainProblem || '________'}`,
+      `我做过的相关作品：${relatedWorks || '________'}`,
+      `我带来过的具体变化：${changes || '________'}`,
+      `我反复形成的判断：${judgments || '________'}`,
+      `我不承诺${notPromise.trim() || '________'}，但我能帮你${canHelp.trim() || '________'}。`,
+    ].join('；');
+    onAnswer('trustPage', generated);
+  };
+
+  const selectionComplete = selectedWorks.length > 0
+    && selectedWorks.every((work) => work.what.trim() && work.problem.trim() && work.proof.trim());
+  const missingIds = [
+    selectionComplete ? '' : 'representativeWorks',
+    trustPage.trim() ? '' : 'trustPage',
+  ].filter(Boolean);
+
+  return (
+    <div className="single-day-form representative-day-form">
+      <section className="current-problem-panel">
+        <span>你现在要解决什么问题：</span>
+        <strong>{mainProblem || '第一周还没有选定唯一的问题'}</strong>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>选出与这个问题最相关的代表作品</h2>
+          <p>从已有作品中选 1–3 个。</p>
+          <div className="representative-choice-list">
+            {works.length ? works.map((work) => {
+              const selected = selectedIds.includes(work.id);
+              const maxed = selectedWorks.length >= 3 && !selected;
+              return (
+                <button
+                  className={selected ? 'is-selected' : ''}
+                  type="button"
+                  key={work.id}
+                  aria-pressed={selected}
+                  disabled={maxed}
+                  onClick={() => toggleWork(work)}
+                >
+                  <span>{selected ? '✓' : '+'}</span>
+                  <strong>{work.title}</strong>
+                </button>
+              );
+            }) : <p className="empty-inline">第 8 关还没有可选择的作品。</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>把代表作品整理清楚</h2>
+          <div className="representative-work-list">
+            {selectedWorks.length ? selectedWorks.map((selected, index) => {
+              const source = works.find((work) => work.id === selected.workId);
+              return (
+                <article key={selected.workId}>
+                  <h3><span>{String(index + 1).padStart(2, '0')}</span>{source?.title}</h3>
+                  <label>
+                    <span>这是什么</span>
+                    <AutoGrowTextarea
+                      value={selected.what}
+                      placeholder="用一句话说明这个作品是什么"
+                      onChange={(event) => updateSelectedWork(selected.workId, { what: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>解决了什么问题</span>
+                    <AutoGrowTextarea
+                      value={selected.problem}
+                      placeholder="它解决了什么具体问题"
+                      onChange={(event) => updateSelectedWork(selected.workId, { problem: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>证明了什么</span>
+                    <AutoGrowTextarea
+                      value={selected.proof}
+                      placeholder="它能证明你的什么能力或判断"
+                      onChange={(event) => updateSelectedWork(selected.workId, { proof: event.target.value })}
+                    />
+                  </label>
+                </article>
+              );
+            }) : <p className="empty-inline">先在上方选择 1–3 个作品。</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="single-task-block trust-boundary-block">
+        <span className="task-number">03</span>
+        <div>
+          <h2>写清楚你的承诺边界</h2>
+          <p className="boundary-example">例如：我不承诺某篇内容爆，也不承诺立刻成交；但我能帮你先把“别人为什么该找你”这件事说清楚。</p>
+          <div className="boundary-fields">
+            <label>
+              <span>我不承诺</span>
+              <AutoGrowTextarea
+                value={notPromise}
+                placeholder="例如：某篇内容一定爆、立刻成交"
+                onChange={(event) => updateBoundary('notPromise', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>但我能帮你</span>
+              <AutoGrowTextarea
+                value={canHelp}
+                placeholder="例如：先把别人为什么该找你说清楚"
+                onChange={(event) => updateBoundary('canHelp', event.target.value)}
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div className="trust-generate-action">
+        <button className="main-button" type="button" disabled={!selectedWorks.length} onClick={generateTrustPage}>
+          生成“为什么能信我” →
+        </button>
+      </div>
+
+      <section className="trust-page-result">
+        <h2>为什么能信我</h2>
+        <AutoGrowTextarea
+          value={trustPage}
+          placeholder="点击上方按钮后，会把你前面填写的内容拼成一整段话。"
+          onChange={(event) => onAnswer('trustPage', event.target.value)}
+        />
+        <span>{trustPage.length} 字</span>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
+          保存，进入第 15 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayFourteenMergedPage({
+  onBack,
+  onContinue,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="single-day-form merged-day-form">
+      <p>这一关的内容已经合并到第 13 关。</p>
+      <div>
+        <button className="secondary-button" type="button" onClick={onBack}>查看第 13 关</button>
+        <button className="main-button" type="button" onClick={onContinue}>进入第 15 关 →</button>
       </div>
     </div>
   );
