@@ -627,7 +627,7 @@ function WeekTwoChecklistPage({
 }) {
   return (
     <main className="week-transition-page week-checklist-page">
-      <section className="week-checklist-card">
+      <section className="week-checklist-card week-two-checklist-card">
         <header className="week-checklist-heading">
           <span>WEEK 02 · CHECKLIST</span>
           <h1>第二周结束，请检查你已经整理好的内容：</h1>
@@ -1214,13 +1214,13 @@ export default function Home() {
           <h1>恭喜你完成了第二周的任务</h1>
           <div className="next-week-preview">
             <strong>第三周计划</strong>
-            <p>这一周我们将回答用户“你看见了什么问题，又能给我什么帮助？”的问题，结束后你将获得：</p>
+            <p>这一周我们将回答用户“<b>你看见了什么问题，又能给我什么帮助？</b>”的问题，结束后你将获得：</p>
             <ul>
-              <li>1 篇问题型内容初稿</li>
-              <li>1 篇判断型内容初稿</li>
-              <li>1 篇故事型内容初稿</li>
-              <li>1 篇证据型内容初稿</li>
-              <li>1 篇产品入口型内容初稿</li>
+              <li>1 篇问题型内容：<b>让读者觉得“这说的就是我”</b></li>
+              <li>1 篇判断型内容：让读者知道当你<b>遇到这件事，你会怎么选</b></li>
+              <li>1 篇故事型内容：<b>让读者知道你的判断从哪里来</b></li>
+              <li>1 篇证据型内容：<b>让读者相信你不是只会说，你真的做过</b></li>
+              <li>1 篇产品入口型内容：<b>让读者知道怎么买你</b></li>
             </ul>
           </div>
           <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(15)}>

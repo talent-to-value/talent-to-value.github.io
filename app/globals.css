@@ -2319,6 +2319,12 @@ select:focus-visible {
   line-height: 1.15;
 }
 
+.week-two-checklist-card .week-checklist-heading h1 {
+  max-width: none;
+  font-size: clamp(36px, 4vw, 52px);
+  white-space: nowrap;
+}
+
 .week-checklist-heading p {
   margin: 18px 0 0;
   font-size: 16px;
@@ -2340,6 +2346,14 @@ select:focus-visible {
 }
 
 .week-checklist-list article.is-missing {
+  background: var(--paper);
+}
+
+.week-two-checklist-list article:nth-child(odd) {
+  background: var(--paper-light);
+}
+
+.week-two-checklist-list article:nth-child(even) {
   background: var(--paper);
 }
 
@@ -2520,6 +2534,11 @@ select:focus-visible {
   margin-top: 7px;
   font-size: 18px;
   line-height: 1.65;
+}
+
+.next-week-preview p b,
+.next-week-preview li b {
+  font-weight: 900;
 }
 
 .next-week-button {
@@ -3190,6 +3209,10 @@ select:focus-visible {
   .day-scroll {
     width: min(920px, calc(100% - 36px));
     padding-top: 30px;
+  }
+
+  .week-two-checklist-card .week-checklist-heading h1 {
+    white-space: normal;
   }
 }
 
