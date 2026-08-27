@@ -681,24 +681,32 @@ function WeekThreeChecklistPage({
 }) {
   return (
     <main className="week-transition-page week-checklist-page">
-      <section className="week-checklist-card week-two-checklist-card">
+      <section className="week-checklist-card week-two-checklist-card week-three-checklist-card">
         <header className="week-checklist-heading">
           <span>WEEK 03 · CHECKLIST</span>
           <h1>第三周结束，请检查你已经写好的内容：</h1>
           <p>这 5 篇内容会成为你发布测试、建立连接和制作购买入口的素材。</p>
         </header>
-        <div className="week-checklist-list week-two-checklist-list">
+        <div className="week-checklist-list week-two-checklist-list week-three-checklist-list">
           {items.map((item, index) => (
-            <article className={item.value.trim() ? 'is-ready' : 'is-missing'} key={item.label}>
-              <div className="week-checklist-label">
-                <span>0{index + 1}</span>
-                <div>
-                  <h2>{item.label}：</h2>
-                  <small>{item.value.trim() ? 'READY' : '待补充'}</small>
+            <details className={`week-three-checklist-item ${item.value.trim() ? 'is-ready' : 'is-missing'}`} key={item.label}>
+              <summary>
+                <div className="week-checklist-label">
+                  <span>0{index + 1}</span>
+                  <div>
+                    <h2>{item.label}：</h2>
+                    <small>{item.value.trim() ? 'READY' : '待补充'}</small>
+                  </div>
+                  <span className="week-checklist-toggle">
+                    <span className="when-closed">展开</span>
+                    <span className="when-open">收起</span>
+                  </span>
                 </div>
+              </summary>
+              <div className="week-three-checklist-content">
+                <p>{item.value || '这一项目前还没有内容，可以之后回到对应关卡补充。'}</p>
               </div>
-              <p>{item.value || '这一项目前还没有内容，可以之后回到对应关卡补充。'}</p>
-            </article>
+            </details>
           ))}
         </div>
         <footer className="week-checklist-actions">
@@ -802,7 +810,7 @@ export default function Home() {
       ...config.sections.map((section) => answers[keyFor(dayNumber, section.id)]?.trim() ?? ''),
     ].filter(Boolean).join('\n\n');
     return {
-      label: `一篇${config.name}`,
+      label: config.name,
       value: finalArticle === undefined ? mergedDraft : finalArticle,
     };
   });
@@ -1341,7 +1349,7 @@ export default function Home() {
   if (view === 'week-three-complete') {
     return (
       <main className="week-transition-page week-complete-page">
-        <section className="week-complete-card">
+        <section className="week-complete-card week-three-complete-card">
           <span>WEEK 03 · COMPLETE</span>
           <div className="week-firework" aria-hidden="true">
             <i />
@@ -1359,7 +1367,7 @@ export default function Home() {
             <b />
           </div>
           <h1>恭喜你完成了第三周的任务</h1>
-          <div className="next-week-preview">
+          <div className="next-week-preview week-four-preview">
             <strong>第四周计划</strong>
             <p>这一周我们将回答用户“现在怎么买，买完能得到什么？”的问题，结束后你将获得：</p>
             <ul>

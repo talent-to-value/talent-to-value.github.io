@@ -2504,6 +2504,66 @@ select:focus-visible {
   background: var(--paper);
 }
 
+.week-three-checklist-list {
+  gap: 12px;
+}
+
+.week-three-checklist-item {
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.week-three-checklist-item:nth-child(even),
+.week-three-checklist-item.is-missing {
+  background: var(--paper);
+}
+
+.week-three-checklist-item summary {
+  padding: 24px 26px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.week-three-checklist-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.week-three-checklist-item summary:hover {
+  background: rgba(227, 148, 178, 0.12);
+}
+
+.week-checklist-toggle {
+  align-self: center;
+  color: var(--ink) !important;
+  font-size: 13px !important;
+}
+
+.week-checklist-toggle .when-open {
+  display: none;
+}
+
+.week-three-checklist-item[open] .week-checklist-toggle .when-closed {
+  display: none;
+}
+
+.week-three-checklist-item[open] .week-checklist-toggle .when-open {
+  display: inline;
+}
+
+.week-three-checklist-content {
+  padding: 0 26px 26px 60px;
+  border-top: 1px solid rgba(35, 75, 48, 0.24);
+}
+
+.week-three-checklist-content p {
+  margin: 22px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
 .week-checklist-label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -2690,6 +2750,35 @@ select:focus-visible {
 
 .next-week-button {
   margin: 40px 0 0 auto;
+}
+
+.week-three-complete-card {
+  min-height: 720px;
+}
+
+.week-four-preview {
+  min-height: 360px;
+  margin-top: 34px;
+  padding: 30px 34px 34px;
+}
+
+.week-complete-card .week-four-preview p {
+  margin-top: 26px;
+}
+
+.week-four-preview ul {
+  margin-top: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.week-four-preview li {
+  margin-top: 0;
+  line-height: 1.75;
+}
+
+.week-three-complete-card .next-week-button {
+  margin-top: 48px;
 }
 
 .tester-list {
@@ -3825,6 +3914,25 @@ select:focus-visible {
     padding: 20px;
   }
 
+  .week-four-preview {
+    min-height: 0;
+    margin-top: 24px;
+    padding: 20px;
+  }
+
+  .week-complete-card .week-four-preview p {
+    margin-top: 18px;
+  }
+
+  .week-four-preview ul {
+    margin-top: 18px;
+    gap: 8px;
+  }
+
+  .week-three-complete-card .next-week-button {
+    margin-top: 32px;
+  }
+
   .next-week-button {
     width: 100%;
   }
@@ -3882,6 +3990,14 @@ select:focus-visible {
   .week-checklist-editor {
     width: 100%;
     margin-left: 0;
+  }
+
+  .week-three-checklist-item summary {
+    padding: 20px;
+  }
+
+  .week-three-checklist-content {
+    padding: 0 20px 20px;
   }
 
   .week-checklist-actions,
