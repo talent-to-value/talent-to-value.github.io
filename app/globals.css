@@ -2226,9 +2226,9 @@ select:focus-visible {
 }
 
 .next-week-preview {
-  width: min(760px, 100%);
+  width: 100%;
   margin-top: 28px;
-  padding: 18px 20px;
+  padding: 24px 26px;
   border: 1px solid var(--ink);
   background: var(--paper-light);
 }
@@ -2236,14 +2236,30 @@ select:focus-visible {
 .next-week-preview strong {
   display: block;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 23px;
+  font-weight: 900;
 }
 
 .week-complete-card .next-week-preview p {
   max-width: none;
-  margin: 8px 0 0;
-  font-size: 15px;
+  margin: 12px 0 0;
+  font-size: 16px;
   line-height: 1.7;
+}
+
+.next-week-preview ul {
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+
+.next-week-preview li {
+  margin-top: 7px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.next-week-button {
+  margin: 24px 0 0 auto;
 }
 
 .tester-list {
@@ -3319,6 +3335,14 @@ select:focus-visible {
   .week-complete-card h1 {
     font-size: 40px;
     white-space: normal;
+  }
+
+  .next-week-preview {
+    padding: 20px;
+  }
+
+  .next-week-button {
+    width: 100%;
   }
 
   .week-firework {

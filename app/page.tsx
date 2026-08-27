@@ -1054,14 +1054,19 @@ export default function Home() {
             <b />
           </div>
           <h1>恭喜你完成了第一周的任务</h1>
-          <p>你已经收获了一份可用的服务说明。接下来，我们进入第二周。</p>
-          <button className="main-button" type="button" onClick={() => navigateToDay(8)}>
+          <div className="next-week-preview">
+            <strong>第二周计划</strong>
+            <p>这一周我们将回答用户“我为什么信你？”的问题，结束后你将获得：</p>
+            <ul>
+              <li>一份作品与证据清单</li>
+              <li>一组能证明判断的认知变化</li>
+              <li>1–3 个代表作品</li>
+              <li>一页“为什么能信我”</li>
+            </ul>
+          </div>
+          <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(8)}>
             进入第二周 <span aria-hidden="true">→</span>
           </button>
-          <div className="next-week-preview">
-            <strong>在第二周你会获得什么</strong>
-            <p>一份作品与证据清单、一组能证明判断的认知变化、1–3 个代表作品，以及一页“为什么能信我”。</p>
-          </div>
         </section>
       </main>
     );
@@ -1092,14 +1097,20 @@ export default function Home() {
             <b />
           </div>
           <h1>恭喜你完成了第二周的任务</h1>
-          <p>你已经把散落的作品、变化和判断整理成了一套可以被别人看见的信任证据。接下来，我们进入第三周。</p>
-          <button className="main-button" type="button" onClick={() => navigateToDay(15)}>
+          <div className="next-week-preview">
+            <strong>第三周计划</strong>
+            <p>这一周我们将回答用户“你看见了什么问题，又能给我什么帮助？”的问题，结束后你将获得：</p>
+            <ul>
+              <li>1 篇问题型内容初稿</li>
+              <li>1 篇判断型内容初稿</li>
+              <li>1 篇故事型内容初稿</li>
+              <li>1 篇证据型内容初稿</li>
+              <li>1 篇产品入口型内容初稿</li>
+            </ul>
+          </div>
+          <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(15)}>
             进入第三周 <span aria-hidden="true">→</span>
           </button>
-          <div className="next-week-preview">
-            <strong>在第三周你会获得什么</strong>
-            <p>5 篇能说明你价值的内容初稿，让别人看见你发现的问题、你的判断，以及你能够提供的帮助。</p>
-          </div>
         </section>
       </main>
     );
