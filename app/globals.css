@@ -533,7 +533,10 @@ select:focus-visible {
 }
 
 .day-progress {
-  height: 3px;
+  height: 5px;
+  position: sticky;
+  z-index: 19;
+  top: 68px;
   background: rgba(36, 69, 44, 0.12);
 }
 
@@ -3565,6 +3568,10 @@ select:focus-visible {
     padding: 0 16px;
     grid-template-columns: 1fr auto;
     gap: 14px;
+  }
+
+  .day-progress {
+    top: 58px;
   }
 
   .day-header .day-brand {
