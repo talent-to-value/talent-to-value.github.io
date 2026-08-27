@@ -796,6 +796,35 @@ select:focus-visible {
   line-height: 1.65;
 }
 
+.result-writing-guide {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.result-writing-guide > p {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+.result-writing-guide > strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.result-writing-guide ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.result-writing-guide li {
+  margin-top: 8px;
+  line-height: 1.75;
+}
+
 .work-evidence-list,
 .result-work-list {
   margin-top: 18px;
@@ -912,6 +941,17 @@ select:focus-visible {
   gap: 10px;
   list-style: none;
   counter-reset: feedback-guide;
+}
+
+.feedback-purpose {
+  margin: 12px 0 16px;
+  padding: 16px 18px;
+  border-left: 6px solid var(--pink);
+  background: rgba(231, 155, 179, 0.22);
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.7;
 }
 
 .feedback-guidance-list li {

@@ -2019,11 +2019,11 @@ function DayEightSinglePage({
         <div>
           <h2>先写下来都做过什么</h2>
           <details className="worksheet-help work-example">
-            <summary>查看书中的例子</summary>
+            <summary>示例</summary>
             <ul>
-              <li>小红书运营手册</li>
-              <li>好事发生 App</li>
-              <li>一篇关于价值表达的长文</li>
+              <li>一篇讲“如何开始记账”的公众号文章</li>
+              <li>一份帮助新同事快速上手的工作清单</li>
+              <li>一次帮朋友梳理简历的咨询与修改</li>
             </ul>
           </details>
 
@@ -2065,13 +2065,13 @@ function DayEightSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>补充每个作品解决的问题与证明点</h2>
+          <h2>补充作品解决了什么问题、证明了什么？</h2>
           <details className="worksheet-help work-example">
-            <summary>查看书中的完整例子</summary>
+            <summary>示例</summary>
             <div className="work-example-list">
-              <p><strong>小红书运营手册</strong><span>解决：把零散经验整理成可以购买和反复使用的方法。</span><span>证明：我能把长期经验整理成产品。</span></p>
-              <p><strong>好事发生 App</strong><span>解决：把记录好事的需要做成可以实际使用的产品。</span><span>证明：产品也能表达价值观。</span></p>
-              <p><strong>关于价值表达的长文</strong><span>解决：把抽象问题讲成读者可以执行的动作。</span><span>证明：我能把抽象问题讲清楚。</span></p>
+              <p><strong>公众号文章</strong><span>解决：读者想开始记账，却不知道第一步该做什么。</span><span>证明：我能把一个复杂方法讲成普通人可以照着做的步骤。</span></p>
+              <p><strong>新同事工作清单</strong><span>解决：新人刚加入团队时，不知道每天该做什么、找谁确认。</span><span>证明：我能把零散的工作经验整理成清楚的流程。</span></p>
+              <p><strong>简历梳理与修改</strong><span>解决：朋友经历很多，但简历上看不出优势和重点。</span><span>证明：我能从大量信息中找到重点，并把价值表达清楚。</span></p>
             </div>
           </details>
 
@@ -2151,22 +2151,23 @@ function DayNineSinglePage({
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>先看几个具体例子</h2>
-          <details className="worksheet-help result-examples">
-            <summary>展开查看行为、能力和业务变化</summary>
-            <div>
-              <p><strong>行为变化</strong><span>从一直想拍但没有开始，到发布第一条视频。</span></p>
-              <p><strong>能力变化</strong><span>从不知道怎么规划日程，到能独立安排一周计划。</span></p>
-              <p><strong>业务变化</strong><span>从产品介绍没人看懂，到客户能带着具体问题来咨询。</span></p>
-            </div>
-          </details>
+          <h2>这里怎么写？</h2>
+          <div className="result-writing-guide">
+            <p>这一部分我们要写每个具体作品为自己带来的变化，以证明自己做过这件事后的认知成长或心得。</p>
+            <strong>变化部分可以写：</strong>
+            <ul>
+              <li><b>行为变化：</b>从一直想写但没有开始，到写完并发布第一篇公众号文章。</li>
+              <li><b>能力变化：</b>从只能凭感觉修改简历，到能找到经历中的重点并重新组织表达。</li>
+              <li><b>业务变化：</b>从别人不知道我能提供什么帮助，到有人带着具体问题来找我。</li>
+            </ul>
+          </div>
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>写下每项作品带来的变化</h2>
+          <h2>用“从——，到——”造句</h2>
           <div className="result-work-list">
             {works.length ? works.map((work) => (
               <article className="result-work-card" key={work.id}>
@@ -2234,6 +2235,7 @@ function DayTenSinglePage({
         <span className="task-number">01</span>
         <div>
           <h2>什么反馈值得收集？</h2>
+          <p className="feedback-purpose">整理反馈，是为了证明你的作品不只是“自己觉得有用”，而是真的帮助别人解决过具体问题、产生过具体变化。</p>
           <p>找到别人的反馈。聊天记录、评论、转介绍、读者私信都可以，只收具体的反馈。多小的反馈都可以写，只要足够具体。</p>
           <ol className="feedback-guidance-list">
             <li>
