@@ -12,7 +12,9 @@ type View =
   | 'week-two-checklist'
   | 'week-two-complete'
   | 'week-three-checklist'
-  | 'week-three-complete';
+  | 'week-three-complete'
+  | 'week-four-checklist'
+  | 'program-complete';
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
@@ -71,6 +73,18 @@ type RepresentativeWork = {
   what: string;
   problem: string;
   proof: string;
+};
+
+type PurchaseEvidence = {
+  id: string;
+  title: string;
+  proof: string;
+};
+
+type BuyerTestRecord = {
+  id: string;
+  name: string;
+  feedback: string;
 };
 
 type ContentWritingSection = {
@@ -351,6 +365,50 @@ function nextRecordId(prefix: string, records: Array<{ id: string }>) {
   return `${prefix}-${index}`;
 }
 
+function parsePurchaseEvidence(value: string, fallback: PurchaseEvidence[]): PurchaseEvidence[] {
+  if (value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item, index) => {
+          if (!item || typeof item !== 'object') return [];
+          const candidate = item as Partial<PurchaseEvidence>;
+          return [{
+            id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `purchase-evidence-${index + 1}`,
+            title: typeof candidate.title === 'string' ? candidate.title : '',
+            proof: typeof candidate.proof === 'string' ? candidate.proof : '',
+          }];
+        });
+      }
+    } catch {
+      return [{ id: 'purchase-evidence-1', title: value, proof: '' }];
+    }
+  }
+  return fallback;
+}
+
+function parseBuyerTestRecords(value: string): BuyerTestRecord[] {
+  if (value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item, index) => {
+          if (!item || typeof item !== 'object') return [];
+          const candidate = item as Partial<BuyerTestRecord>;
+          return [{
+            id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `buyer-${index + 1}`,
+            name: typeof candidate.name === 'string' ? candidate.name : '',
+            feedback: typeof candidate.feedback === 'string' ? candidate.feedback : '',
+          }];
+        });
+      }
+    } catch {
+      return [{ id: 'buyer-1', name: '', feedback: value }];
+    }
+  }
+  return [];
+}
+
 function AutoGrowTextarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -528,6 +586,8 @@ function reconcileSavedProgress(saved: SavedState) {
       });
       return;
     }
+
+    if (day.day >= 22) return;
 
     // The previous interface stored a completed reality action as deferred=false.
     // Give that state a durable answer in the single-page worksheet.
@@ -719,6 +779,53 @@ function WeekThreeChecklistPage({
   );
 }
 
+function WeekFourChecklistPage({
+  items,
+  onContinue,
+}: {
+  items: WeekTwoChecklistItem[];
+  onContinue: () => void;
+}) {
+  return (
+    <main className="week-transition-page week-checklist-page">
+      <section className="week-checklist-card week-two-checklist-card week-three-checklist-card week-four-checklist-card">
+        <header className="week-checklist-heading">
+          <span>WEEK 04 · CHECKLIST</span>
+          <h1>第四周结束，请检查你的第一版是否已经 ready：</h1>
+          <p>这些内容共同组成一页可以被看见、理解和购买的入口。</p>
+        </header>
+        <div className="week-checklist-list week-two-checklist-list week-three-checklist-list">
+          {items.map((item, index) => (
+            <details className={`week-three-checklist-item ${item.value.trim() ? 'is-ready' : 'is-missing'}`} key={item.label}>
+              <summary>
+                <div className="week-checklist-label">
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <div>
+                    <h2>{item.label}：</h2>
+                    <small>{item.value.trim() ? 'READY' : '待补充'}</small>
+                  </div>
+                  <span className="week-checklist-toggle">
+                    <span className="when-closed">展开</span>
+                    <span className="when-open">收起</span>
+                  </span>
+                </div>
+              </summary>
+              <div className="week-three-checklist-content">
+                <p>{item.value || '这一项目前还没有内容，可以之后回到对应关卡补充。'}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+        <footer className="week-checklist-actions">
+          <button className="main-button" type="button" onClick={onContinue}>
+            确认，查看 30 关成果 <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </section>
+    </main>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
@@ -736,6 +843,8 @@ export default function Home() {
   const firstIncomplete = days.find((day) => !completed[String(day.day)])?.day ?? 30;
   const activeDayIsPartial = (
     currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting'
+  ) || (
+    currentDay === 28 && answers[keyFor(28, 'buyerTestStatus')] === 'waiting'
   ) || Object.entries(deferred).some(
     ([key, value]) => value && key.startsWith(`${currentDay}:`),
   );
@@ -814,6 +923,53 @@ export default function Home() {
       value: finalArticle === undefined ? mergedDraft : finalArticle,
     };
   });
+  const weekFourBuyerRecords = parseBuyerTestRecords(answers[keyFor(28, 'purchaseResults')] ?? '');
+  const weekFourEvidence = parsePurchaseEvidence(answers[keyFor(27, 'offerEvidence')] ?? '', []);
+  const weekFourChecklist: WeekTwoChecklistItem[] = [
+    {
+      label: '一个明确、现在能够交付的小产品',
+      value: answers[keyFor(22, 'chosenOffer')] ?? '',
+    },
+    {
+      label: '清楚的适合对象与不适合对象',
+      value: [
+        answers[keyFor(23, 'fitAudience')] ? `适合：${answers[keyFor(23, 'fitAudience')]}` : '',
+        answers[keyFor(23, 'notFitAudience')] ? `不适合：${answers[keyFor(23, 'notFitAudience')]}` : '',
+      ].filter(Boolean).join('\n\n'),
+    },
+    {
+      label: '具体问题与交付物',
+      value: [
+        answers[keyFor(24, 'offerProblem')] ? `解决：${answers[keyFor(24, 'offerProblem')]}` : '',
+        answers[keyFor(24, 'deliverables')] ? `交付：\n${answers[keyFor(24, 'deliverables')]}` : '',
+      ].filter(Boolean).join('\n\n'),
+    },
+    {
+      label: '服务流程、边界与价格',
+      value: [
+        answers[keyFor(25, 'process')] ? `流程：\n${answers[keyFor(25, 'process')]}` : '',
+        answers[keyFor(25, 'excluded')] ? `边界：\n${answers[keyFor(25, 'excluded')]}` : '',
+        answers[keyFor(26, 'price')] ? `价格：${answers[keyFor(26, 'price')]}` : '',
+        answers[keyFor(26, 'priceRationale')] ?? '',
+      ].filter(Boolean).join('\n\n'),
+    },
+    {
+      label: '与这次购买最相关的证据',
+      value: weekFourEvidence.map((item) => [item.title, item.proof ? `证明：${item.proof}` : ''].filter(Boolean).join('\n')).join('\n\n'),
+    },
+    {
+      label: '一页可以直接发出的购买入口',
+      value: firstFilled(
+        answers[keyFor(30, 'finalPurchasePage')],
+        answers[keyFor(29, 'purchasePageFinal')],
+        answers[keyFor(27, 'purchasePageDraft')],
+      ),
+    },
+    {
+      label: '真实购买测试与反馈',
+      value: weekFourBuyerRecords.map((record) => `${record.name || '未命名对象'}：${record.feedback || '等待反馈'}`).join('\n\n'),
+    },
+  ];
 
   /* eslint-disable react-hooks/set-state-in-effect -- restoring device-local progress is intentional */
   useEffect(() => {
@@ -922,6 +1078,8 @@ export default function Home() {
                             ? currentDay + 1
                             : currentDay === 20 && previousValue !== value
                               ? 21
+                              : currentDay >= 22 && currentDay <= 29 && previousValue !== value
+                                ? currentDay + 1
                               : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
@@ -965,6 +1123,18 @@ export default function Home() {
         && previousValue !== value
       ) {
         next[keyFor(6, 'optimizedStatement')] = '';
+      }
+      if (currentDay >= 22 && currentDay <= 26 && previousValue !== value) {
+        next[keyFor(27, 'purchasePageDraft')] = '';
+        next[keyFor(29, 'purchasePageFinal')] = '';
+        next[keyFor(30, 'finalPurchasePage')] = '';
+      }
+      if (currentDay === 27 && previousValue !== value) {
+        next[keyFor(29, 'purchasePageFinal')] = '';
+        next[keyFor(30, 'finalPurchasePage')] = '';
+      }
+      if (currentDay === 29 && previousValue !== value) {
+        next[keyFor(30, 'finalPurchasePage')] = '';
       }
       return next;
     });
@@ -1018,10 +1188,19 @@ export default function Home() {
     const missing = new Set(missingIds);
     setDeferred((previous) => {
       const next = { ...previous };
-      flow.forEach((step, index) => {
-        const id = flowStepId(step, index);
-        next[keyFor(currentDay, id)] = missing.has(id);
-      });
+      if (currentDay >= 22 && currentDay <= 29) {
+        Object.keys(next).forEach((key) => {
+          if (key.startsWith(`${currentDay}:`)) delete next[key];
+        });
+        missingIds.forEach((id) => {
+          next[keyFor(currentDay, id)] = true;
+        });
+      } else {
+        flow.forEach((step, index) => {
+          const id = flowStepId(step, index);
+          next[keyFor(currentDay, id)] = missing.has(id);
+        });
+      }
       return next;
     });
     setCompleted((previous) => ({ ...previous, [String(currentDay)]: true }));
@@ -1104,6 +1283,22 @@ export default function Home() {
     setCurrentDay(22);
     setPreviewMode(false);
     setView('week-three-checklist');
+    window.scrollTo({ top: 0 });
+  };
+
+  const finishFourthWeek = (status: 'waiting' | 'published', missingIds: string[]) => {
+    const missing = new Set(missingIds);
+    setDeferred((previous) => {
+      const next = { ...previous };
+      ['finalPurchasePage', 'launchLocations', 'launchCopy', 'marketResult'].forEach((id) => {
+        next[keyFor(30, id)] = missing.has(id);
+      });
+      next[keyFor(30, 'marketResult')] = status === 'waiting' || missing.has('marketResult');
+      return next;
+    });
+    setCompleted((previous) => ({ ...previous, '30': true }));
+    setPreviewMode(false);
+    setView('week-four-checklist');
     window.scrollTo({ top: 0 });
   };
 
@@ -1386,6 +1581,42 @@ export default function Home() {
     );
   }
 
+  if (view === 'week-four-checklist') {
+    return (
+      <WeekFourChecklistPage
+        items={weekFourChecklist}
+        onContinue={() => setView('program-complete')}
+      />
+    );
+  }
+
+  if (view === 'program-complete') {
+    return (
+      <main className="week-transition-page program-complete-page">
+        <section className="program-complete-card">
+          <span>30 DAYS · COMPLETE</span>
+          <div className="week-firework" aria-hidden="true">
+            {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
+            <b />
+          </div>
+          <h1>恭喜你完成了 30 关</h1>
+          <p>你已经把一项能力整理成了第一版可以进入真实世界的产品。</p>
+          <div className="program-result-list">
+            <article><span>01</span><strong>一份清晰的服务说明</strong></article>
+            <article><span>02</span><strong>一套可以被相信的证据</strong></article>
+            <article><span>03</span><strong>五篇与用户建立连接的内容</strong></article>
+            <article><span>04</span><strong>一页可以直接发布的购买入口</strong></article>
+          </div>
+          <p className="program-complete-note">这不是最终版，而是一版可以开始被看见、被询问和被购买的产品。</p>
+          <div className="program-complete-actions">
+            <button className="secondary-button" type="button" onClick={() => setView('overview')}>回到总览</button>
+            <button className="main-button" type="button" onClick={() => navigateToDay(30)}>查看我的购买入口 →</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="mvp-day">
       <DaySidebar
@@ -1415,7 +1646,10 @@ export default function Home() {
             <div className="day-kicker-row">
               <span>第 {activeStage.id} 周 · {activeStage.title}</span>
               {activeDayIsPartial && (
-                <strong>{currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting' ? '反馈待补充' : '待补充'}</strong>
+                <strong>{(
+                  (currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting')
+                  || (currentDay === 28 && answers[keyFor(28, 'buyerTestStatus')] === 'waiting')
+                ) ? '反馈待补充' : '待补充'}</strong>
               )}
             </div>
             <h1>{activeDay.title}</h1>
@@ -1423,7 +1657,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -1450,6 +1684,22 @@ export default function Home() {
                 onSubmit={() => {
                   if (previewMode) navigateToDay(firstIncomplete);
                   else finishThirdWeek();
+                }}
+              />
+            ) : currentDay >= 22 && currentDay <= 30 ? (
+              <FourthWeekPage
+                dayNumber={currentDay}
+                answers={answers}
+                previewMode={previewMode}
+                firstIncomplete={firstIncomplete}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => {
+                  if (previewMode) navigateToDay(firstIncomplete);
+                  else finishCurrentDay(missingIds);
+                }}
+                onFinish={(status, missingIds) => {
+                  if (previewMode) navigateToDay(firstIncomplete);
+                  else finishFourthWeek(status, missingIds);
                 }}
               />
             ) : previewMode ? (
@@ -3394,6 +3644,430 @@ function DayTwentyOnePublishPage({
   );
 }
 
+function LineListEditor({
+  value,
+  onChange,
+  placeholder,
+  addLabel = '新增一行',
+  minRows = 1,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  addLabel?: string;
+  minRows?: number;
+}) {
+  const storedLines = value ? value.split('\n') : [];
+  const lines = storedLines.length >= minRows
+    ? storedLines
+    : [...storedLines, ...Array(minRows - storedLines.length).fill('')];
+
+  const updateLine = (index: number, nextValue: string) => {
+    onChange(lines.map((line, lineIndex) => (lineIndex === index ? nextValue : line)).join('\n'));
+  };
+
+  const removeLine = (index: number) => {
+    const next = lines.filter((_, lineIndex) => lineIndex !== index);
+    onChange((next.length ? next : ['']).join('\n'));
+  };
+
+  return (
+    <div className="compact-line-editor">
+      {lines.map((line, index) => (
+        <div className="compact-line-row" key={`${index}-${lines.length}`}>
+          <span>{String(index + 1).padStart(2, '0')}</span>
+          <input
+            type="text"
+            value={line}
+            aria-label={`${placeholder} ${index + 1}`}
+            placeholder={placeholder}
+            onChange={(event) => updateLine(index, event.target.value)}
+          />
+          {lines.length > 1 && (
+            <button type="button" aria-label={`删除第 ${index + 1} 行`} onClick={() => removeLine(index)}>×</button>
+          )}
+        </div>
+      ))}
+      <button className="linked-add-button" type="button" onClick={() => onChange([...lines, ''].join('\n'))}>
+        <span aria-hidden="true">＋</span> {addLabel}
+      </button>
+    </div>
+  );
+}
+
+function FourthWeekPage({
+  dayNumber,
+  answers,
+  previewMode,
+  firstIncomplete,
+  onAnswer,
+  onSubmit,
+  onFinish,
+}: {
+  dayNumber: number;
+  answers: AnswerMap;
+  previewMode: boolean;
+  firstIncomplete: number;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+  onFinish: (status: 'waiting' | 'published', missingIds: string[]) => void;
+}) {
+  const getAnswer = (day: number, id: string) => answers[keyFor(day, id)] ?? '';
+  const audience = firstFilled(getAnswer(2, 'selectedAudience'), getAnswer(6, 'statementFit'));
+  const earlierProblems = uniqueLines(getAnswer(3, 'topProblems'));
+  const earlierProblem = firstFilled(
+    getAnswer(22, 'offerSolvedProblem'),
+    getAnswer(4, 'focusProblem'),
+    earlierProblems[0],
+  );
+  const chosenOffer = getAnswer(22, 'chosenOffer');
+  const fitAudience = firstFilled(getAnswer(23, 'fitAudience'), audience);
+  const notFitAudience = getAnswer(23, 'notFitAudience');
+  const offerProblem = firstFilled(getAnswer(24, 'offerProblem'), earlierProblem);
+  const deliverables = getAnswer(24, 'deliverables');
+  const process = getAnswer(25, 'process');
+  const excluded = getAnswer(25, 'excluded');
+  const price = getAnswer(26, 'price');
+  const priceRationale = getAnswer(26, 'priceRationale');
+  const startAction = getAnswer(27, 'startAction');
+  const purchasePageDraft = getAnswer(27, 'purchasePageDraft');
+  const purchasePageFinal = firstFilled(getAnswer(29, 'purchasePageFinal'), purchasePageDraft);
+  const nextButtonLabel = previewMode
+    ? `返回第 ${firstIncomplete} 关`
+    : `保存，进入第 ${dayNumber + 1} 关 →`;
+  const works = parseWorkEvidence(
+    getAnswer(8, 'workEvidence'),
+    getAnswer(8, 'works'),
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const representativeWorks = parseRepresentativeWorks(getAnswer(13, 'representativeWorks'), works);
+  const evidenceFallback = (representativeWorks.length
+    ? representativeWorks.map((work, index) => ({
+      id: `purchase-evidence-${index + 1}`,
+      title: work.what,
+      proof: work.proof,
+    }))
+    : works.slice(0, 3).map((work, index) => ({
+      id: `purchase-evidence-${index + 1}`,
+      title: work.title,
+      proof: work.proof,
+    })));
+
+  const submit = (missingIds: string[]) => onSubmit(missingIds);
+
+  if (dayNumber === 22) {
+    const candidates = uniqueLines(getAnswer(22, 'offerCandidates'));
+    const selectedProblem = getAnswer(22, 'offerSolvedProblem');
+    const missing = [
+      chosenOffer.trim() ? '' : 'chosenOffer',
+      getAnswer(22, 'offerProof').trim() ? '' : 'offerProof',
+      selectedProblem.trim() ? '' : 'offerSolvedProblem',
+      getAnswer(22, 'offerTime').trim() ? '' : 'offerTime',
+    ].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro">
+          <span className="task-number">01</span>
+          <div>
+            <h2>先做一个现在就能交付的小产品</h2>
+            <p>这里不是设计完整产品线。先选一个客户看得懂、你在 1–2 周内能够交付的小结果。</p>
+            <div className="carried-summary">
+              <span>你目前想服务的人</span><strong>{audience || '前面还没有确定客户'}</strong>
+              <span>他们最想解决的问题</span><strong>{earlierProblem || '前面还没有确定问题'}</strong>
+            </div>
+            <details className="worksheet-help"><summary>示例</summary><ul>
+              <li>陪一个完全不会拍摄的人完成第一条视频</li>
+              <li>帮一个有目标但总拖延的人整理一周执行计划</li>
+              <li>帮一个经历很多却说不清优势的人重写服务介绍</li>
+            </ul></details>
+          </div>
+        </section>
+
+        <section className="single-task-block">
+          <span className="task-number">02</span>
+          <div>
+            <h2>写下 1–3 个现在可以卖的小结果</h2>
+            <LineListEditor
+              value={getAnswer(22, 'offerCandidates')}
+              minRows={2}
+              placeholder="例如：陪你完成第一条视频"
+              addLabel="再加一个想法"
+              onChange={(value) => onAnswer('offerCandidates', value)}
+            />
+          </div>
+        </section>
+
+        <section className="single-task-block">
+          <span className="task-number">03</span>
+          <div>
+            <h2>选一个，并确认它现在能够交付</h2>
+            <div className="fourth-week-field-list">
+              <label><span>这一轮卖什么</span><select value={chosenOffer} onChange={(event) => onAnswer('chosenOffer', event.target.value)}>
+                <option value="">选择一个小产品</option>
+                {candidates.map((candidate) => <option key={candidate} value={candidate}>{candidate}</option>)}
+                {chosenOffer && !candidates.includes(chosenOffer) && <option value={chosenOffer}>{chosenOffer}</option>}
+              </select></label>
+              <label><span>它解决哪个具体问题</span><input type="text" value={selectedProblem} placeholder={earlierProblem || '客户现在最想解决的问题'} onChange={(event) => onAnswer('offerSolvedProblem', event.target.value)} /></label>
+              <label><span>你凭什么能交付</span><AutoGrowTextarea value={getAnswer(22, 'offerProof')} placeholder="写一条最直接的经验或证据" onChange={(event) => onAnswer('offerProof', event.target.value)} /></label>
+              <label><span>多久可以完成</span><input type="text" value={getAnswer(22, 'offerTime')} placeholder="例如：7 天内 / 两次沟通后" onChange={(event) => onAnswer('offerTime', event.target.value)} /></label>
+            </div>
+          </div>
+        </section>
+
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 23) {
+    const missing = [getAnswer(23, 'fitAudience').trim() ? '' : 'fitAudience', notFitAudience.trim() ? '' : 'notFitAudience'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>先让客户判断：这是不是为我准备的？</h2>
+          <p>“适合谁”帮助对的人认出自己；“不适合谁”减少错配，让后面的交付更稳定。</p>
+          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
+          <details className="worksheet-help"><summary>示例</summary><p><b>适合：</b>已经有专业能力，但介绍自己和服务时总是很散的人。</p><p><b>不适合：</b>只想快速涨粉、追热点，或者希望别人长期代运营的人。</p></details>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>写清楚适合谁</h2>
+          <AutoGrowTextarea value={getAnswer(23, 'fitAudience')} placeholder={audience ? `适合：${audience}` : '适合：正处在什么情况、想解决什么问题的人'} onChange={(event) => onAnswer('fitAudience', event.target.value)} />
+        </div></section>
+        <section className="single-task-block"><span className="task-number">03</span><div>
+          <h2>写清楚不适合谁</h2>
+          <AutoGrowTextarea value={notFitAudience} placeholder="不适合：期待什么结果、需要什么服务方式的人" onChange={(event) => onAnswer('notFitAudience', event.target.value)} />
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 24) {
+    const missing = [offerProblem.trim() ? '' : 'offerProblem', uniqueLines(deliverables).length ? '' : 'deliverables'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>客户不是购买一个服务名，而是购买一个具体结果</h2>
+          <p>这一页只回答两件事：你重点解决什么问题，结束后客户手里会多出哪些可以清点的东西。</p>
+          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>重点解决什么问题</h2>
+          <AutoGrowTextarea value={offerProblem} placeholder={earlierProblem || '例如：别人看完介绍，仍然不知道什么时候该找你'} onChange={(event) => onAnswer('offerProblem', event.target.value)} />
+        </div></section>
+        <section className="single-task-block"><span className="task-number">03</span><div>
+          <h2>客户结束后会拿到什么</h2>
+          <p className="compact-note">写具体的文档、页面、修改稿、清单或已经完成的动作，不写“策略建议”这类宽词。</p>
+          <LineListEditor value={deliverables} minRows={3} placeholder="例如：一版可以直接使用的服务介绍" addLabel="新增一个交付物" onChange={(value) => onAnswer('deliverables', value)} />
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 25) {
+    const missing = [uniqueLines(process).length ? '' : 'process', uniqueLines(excluded).length ? '' : 'excluded'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>让客户知道接下来会发生什么</h2>
+          <p>流程越清楚，购买风险越低。边界不是减少价值，而是提前说明哪些事情不在本次服务里。</p>
+          <details className="worksheet-help"><summary>流程示例</summary><ol><li>填写一份简单问卷</li><li>提交现有资料</li><li>进行一次沟通</li><li>收到整理后的文档</li><li>完成一次修改</li></ol></details>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>服务怎么进行</h2>
+          <LineListEditor value={process} minRows={3} placeholder="写一个真实会发生的步骤" addLabel="新增一步" onChange={(value) => onAnswer('process', value)} />
+        </div></section>
+        <section className="single-task-block"><span className="task-number">03</span><div>
+          <h2>本次服务不包含什么、不承诺什么</h2>
+          <LineListEditor value={excluded} minRows={2} placeholder="例如：不包含长期代写 / 不承诺立刻成交" addLabel="新增一条边界" onChange={(value) => onAnswer('excluded', value)} />
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 26) {
+    const missing = [price.trim() ? '' : 'price', priceRationale.trim() ? '' : 'priceRationale'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>价格不是孤零零的数字</h2>
+          <p>客户需要先看懂会拿到什么、服务如何进行、边界在哪里，再判断这个价格是否成立。</p>
+          <div className="price-context"><span>客户会拿到</span><p>{uniqueLines(deliverables).join('；') || '第 24 关还没有填写交付物'}</p></div>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>写下一个你现在能站得住的价格</h2>
+          <label className="price-input"><span>价格</span><input type="text" value={price} placeholder="例如：¥899 / 次" onChange={(event) => onAnswer('price', event.target.value)} /></label>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">03</span><div>
+          <h2>为什么值这个价格</h2>
+          <details className="worksheet-help"><summary>这里怎么写？</summary><p>这个价格不是购买一段聊天时间，而是购买一个具体结果。说明客户会拿到什么，这件事解决后会少走什么弯路。</p></details>
+          <AutoGrowTextarea value={priceRationale} placeholder="这个价格不是购买……而是购买……你会拿到……并少走……" onChange={(event) => onAnswer('priceRationale', event.target.value)} />
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 27) {
+    const evidence = parsePurchaseEvidence(getAnswer(27, 'offerEvidence'), evidenceFallback);
+    const rows = evidence.length ? evidence : [{ id: 'purchase-evidence-1', title: '', proof: '' }];
+    const saveEvidence = (next: PurchaseEvidence[]) => onAnswer('offerEvidence', JSON.stringify(next));
+    const updateEvidence = (id: string, patch: Partial<PurchaseEvidence>) => saveEvidence(rows.map((item) => item.id === id ? { ...item, ...patch } : item));
+    const generatePurchasePage = () => {
+      const bullets = (value: string) => uniqueLines(value).map((line) => `- ${line}`).join('\n');
+      const evidenceText = rows.filter((item) => item.title.trim()).map((item) => `- ${item.title}${item.proof.trim() ? `：${item.proof}` : ''}`).join('\n');
+      onAnswer('purchasePageDraft', [
+        chosenOffer ? `# ${chosenOffer}` : '',
+        fitAudience ? `【适合谁】\n${fitAudience}` : '',
+        notFitAudience ? `【不适合谁】\n${notFitAudience}` : '',
+        offerProblem ? `【重点解决的问题】\n${offerProblem}` : '',
+        deliverables ? `【你会拿到】\n${bullets(deliverables)}` : '',
+        process ? `【服务怎么进行】\n${bullets(process)}` : '',
+        excluded ? `【服务边界】\n${bullets(excluded)}` : '',
+        price ? `【价格】\n${price}` : '',
+        priceRationale,
+        evidenceText ? `【为什么可以相信我】\n${evidenceText}` : '',
+        startAction ? `【怎么开始】\n${startAction}` : '',
+      ].filter(Boolean).join('\n\n'));
+    };
+    const missing = [rows.some((item) => item.title.trim() && item.proof.trim()) ? '' : 'offerEvidence', startAction.trim() ? '' : 'startAction', purchasePageDraft.trim() ? '' : 'purchasePageDraft'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>只放最相关的证据</h2>
+          <p>证据不需要多。每一条都要替客户解释：它证明了什么，为什么和这次购买有关。</p>
+          <div className="purchase-evidence-list">{rows.map((item, index) => <div className="purchase-evidence-row" key={item.id}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <label><span>证据</span><input type="text" value={item.title} placeholder="相关作品、经验或具体反馈" onChange={(event) => updateEvidence(item.id, { title: event.target.value })} /></label>
+            <label><span>它证明什么</span><input type="text" value={item.proof} placeholder="替客户解释它为什么相关" onChange={(event) => updateEvidence(item.id, { proof: event.target.value })} /></label>
+          </div>)}</div>
+          <button className="linked-add-button" type="button" onClick={() => saveEvidence([...rows, { id: nextRecordId('purchase-evidence', rows), title: '', proof: '' }])}><span aria-hidden="true">＋</span> 再加一条证据</button>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>客户要怎么开始</h2>
+          <input className="full-width-input" type="text" value={startAction} placeholder="例如：私信我“诊断”，我会先确认这项服务是否适合你" onChange={(event) => onAnswer('startAction', event.target.value)} />
+        </div></section>
+        <section className="single-task-block purchase-page-builder"><span className="task-number">03</span><div>
+          <h2>生成你的第一版购买入口</h2>
+          <p>工具会把第 22–27 关的答案拼在一起。生成后可以直接编辑，不通顺也没关系。</p>
+          <button className="main-button centered-action" type="button" onClick={generatePurchasePage}>生成购买入口 <span aria-hidden="true">→</span></button>
+          <div className="purchase-page-editor"><AutoGrowTextarea value={purchasePageDraft} placeholder="点击上方按钮生成购买入口" onChange={(event) => onAnswer('purchasePageDraft', event.target.value)} /><span>{purchasePageDraft.replace(/\s/g, '').length} 字</span></div>
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  if (dayNumber === 28) {
+    const storedRecords = parseBuyerTestRecords(getAnswer(28, 'purchaseResults'));
+    const records = storedRecords.length ? storedRecords : [{ id: 'buyer-1', name: '', feedback: '' }];
+    const saveRecords = (next: BuyerTestRecord[]) => onAnswer('purchaseResults', JSON.stringify(next));
+    const updateRecord = (id: string, patch: Partial<BuyerTestRecord>) => saveRecords(records.map((record) => record.id === id ? { ...record, ...patch } : record));
+    const hasFeedback = records.some((record) => record.name.trim() && record.feedback.trim());
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>先不要大范围发布</h2>
+          <p>把购买入口直接发给最可能需要这个结果的人。先发 1 位也可以，最多记录 5 位；如果暂时没有回复，可以标记“等待反馈”后继续。</p>
+          <details className="worksheet-help"><summary>查看准备发送的购买入口</summary><pre className="purchase-page-preview">{purchasePageDraft || '第 27 关还没有生成购买入口。'}</pre></details>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>记录真实反应</h2>
+          <p className="compact-note">不要急着说服。记录对方是否愿意购买；如果不买，把对方的原话写下来。</p>
+          <div className="buyer-test-list">{records.map((record, index) => <div className="buyer-test-row" key={record.id}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <label><span>测试对象</span><input type="text" value={record.name} placeholder="写别名即可" onChange={(event) => updateRecord(record.id, { name: event.target.value })} /></label>
+            <label><span>购买意愿与原因</span><AutoGrowTextarea value={record.feedback} placeholder="愿意购买 / 暂不购买，以及对方的原话" onChange={(event) => updateRecord(record.id, { feedback: event.target.value })} /></label>
+          </div>)}</div>
+          {records.length < 5 && <button className="linked-add-button" type="button" onClick={() => saveRecords([...records, { id: nextRecordId('buyer', records), name: '', feedback: '' }])}><span aria-hidden="true">＋</span> 添加一个测试对象</button>}
+        </div></section>
+        {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit([])}>{nextButtonLabel}</button></div> : <div className="single-day-submit feedback-submit-actions">
+          <button className="secondary-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'waiting'); submit(['purchaseResults']); }}>等待反馈，先进入第 29 关</button>
+          <button className="main-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'complete'); submit(hasFeedback ? [] : ['purchaseResults']); }}>保存反馈，进入第 29 关 →</button>
+        </div>}
+      </div>
+    );
+  }
+
+  if (dayNumber === 29) {
+    const records = parseBuyerTestRecords(getAnswer(28, 'purchaseResults'));
+    const signalOptions = ['不知道会拿到什么', '不知道自己是否适合', '证据还不够', '不知道怎么开始', '误解了服务边界', '觉得有启发但不愿付费'];
+    const selectedSignals = uniqueLines(getAnswer(29, 'repeatedSignals'));
+    const toggleSignal = (signal: string) => onAnswer('repeatedSignals', selectedSignals.includes(signal) ? selectedSignals.filter((item) => item !== signal).join('\n') : [...selectedSignals, signal].join('\n'));
+    const finalPage = purchasePageFinal;
+    const missing = [selectedSignals.length ? '' : 'repeatedSignals', getAnswer(29, 'offerRevision').trim() ? '' : 'offerRevision', finalPage.trim() ? '' : 'purchasePageFinal'].filter(Boolean);
+    return (
+      <div className="single-day-form fourth-week-form">
+        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+          <h2>只改重复出现的问题</h2>
+          <p>不要因为一个人的意见推翻全部。先把反馈放在一起，只处理反复出现的理解障碍和购买障碍。</p>
+          <details className="worksheet-help"><summary>查看测试反馈</summary>{records.length ? <ul>{records.map((record) => <li key={record.id}><b>{record.name || '未命名对象'}：</b>{record.feedback || '尚未填写反馈'}</li>)}</ul> : <p>第 28 关还没有反馈，可以先标记待补充并继续整理页面。</p>}</details>
+        </div></section>
+        <section className="single-task-block"><span className="task-number">02</span><div>
+          <h2>哪些问题重复出现了？</h2>
+          <div className="revision-signal-grid">{signalOptions.map((signal) => <button className={selectedSignals.includes(signal) ? 'is-selected' : ''} type="button" key={signal} onClick={() => toggleSignal(signal)}>{signal}</button>)}</div>
+          <AutoGrowTextarea value={getAnswer(29, 'offerRevision')} placeholder="根据重复反馈，这一次具体准备改什么？" onChange={(event) => onAnswer('offerRevision', event.target.value)} />
+        </div></section>
+        <section className="single-task-block"><span className="task-number">03</span><div>
+          <h2>修改并保存最终购买页</h2>
+          <div className="purchase-page-editor"><AutoGrowTextarea value={finalPage} placeholder="第 27 关的购买入口会自动带到这里" onChange={(event) => onAnswer('purchasePageFinal', event.target.value)} /><span>{finalPage.replace(/\s/g, '').length} 字</span></div>
+        </div></section>
+        <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
+      </div>
+    );
+  }
+
+  const finalPurchasePage = firstFilled(getAnswer(30, 'finalPurchasePage'), purchasePageFinal);
+  const locationOptions = ['个人主页', '置顶内容', '公众号文末', '小红书简介', '私信自动回复', '朋友圈或即刻'];
+  const selectedLocations = uniqueLines(getAnswer(30, 'launchLocations'));
+  const toggleLocation = (location: string) => onAnswer('launchLocations', selectedLocations.includes(location) ? selectedLocations.filter((item) => item !== location).join('\n') : [...selectedLocations, location].join('\n'));
+  const generatedLaunchCopy = [
+    chosenOffer ? `我做了一个“${chosenOffer}”` : '',
+    fitAudience ? `，主要帮助${fitAudience}` : '',
+    offerProblem ? `，解决“${offerProblem}”的问题。` : '。',
+    startAction ? `如果你正卡在这里，${startAction}。` : '',
+  ].join('');
+  const launchCopy = firstFilled(getAnswer(30, 'launchCopy'), generatedLaunchCopy);
+  const finish = (status: 'waiting' | 'published') => {
+    onAnswer('finalPurchasePage', finalPurchasePage);
+    onAnswer('launchCopy', launchCopy);
+    onAnswer('launchStatus', status);
+    onFinish(status, [
+      finalPurchasePage.trim() ? '' : 'finalPurchasePage',
+      selectedLocations.length ? '' : 'launchLocations',
+      launchCopy.trim() ? '' : 'launchCopy',
+      status === 'published' ? '' : 'marketResult',
+    ].filter(Boolean));
+  };
+  return (
+    <div className="single-day-form fourth-week-form">
+      <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+        <h2>你的第一版已经可以被看见、理解和购买</h2>
+        <p>这不是最终版。先把它放到一个真实入口，观察有没有人带着具体问题来找你。</p>
+        <details className="worksheet-help"><summary>查看最终购买页</summary><pre className="purchase-page-preview">{finalPurchasePage || '前面还没有保存购买页。'}</pre></details>
+      </div></section>
+      <section className="single-task-block"><span className="task-number">02</span><div>
+        <h2>准备放在哪里</h2>
+        <div className="revision-signal-grid launch-location-grid">{locationOptions.map((location) => <button className={selectedLocations.includes(location) ? 'is-selected' : ''} type="button" key={location} onClick={() => toggleLocation(location)}>{location}</button>)}</div>
+      </div></section>
+      <section className="single-task-block"><span className="task-number">03</span><div>
+        <h2>写一段发布说明</h2>
+        <p className="compact-note">不要只说“终于上线了一个新产品”。直接写清楚它帮谁、解决什么，以及怎么开始。</p>
+        <AutoGrowTextarea value={launchCopy} placeholder="说明帮谁、解决什么、怎么开始" onChange={(event) => onAnswer('launchCopy', event.target.value)} />
+      </div></section>
+      <section className="single-task-block"><span className="task-number">04</span><div>
+        <h2>发布后的真实反应</h2>
+        <AutoGrowTextarea value={getAnswer(30, 'marketResult')} placeholder="有人咨询、购买或拒绝了吗？也可以发布后再回来补充。" onChange={(event) => onAnswer('marketResult', event.target.value)} />
+      </div></section>
+      {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => onSubmit([])}>{`返回第 ${firstIncomplete} 关`}</button></div> : <div className="single-day-submit feedback-submit-actions">
+        <button className="secondary-button" type="button" onClick={() => finish('waiting')}>先保存发布稿，稍后发布</button>
+        <button className="main-button" type="button" onClick={() => finish('published')}>已经发布，完成 30 关 →</button>
+      </div>}
+    </div>
+  );
+}
+
 function DayWorksheet({
   day,
   flow,
@@ -3588,6 +4262,7 @@ function dayStatus(
 ) {
   if (completed[String(dayNumber)]) {
     if (dayNumber === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting') return '反馈待补充';
+    if (dayNumber === 28 && answers[keyFor(28, 'buyerTestStatus')] === 'waiting') return '反馈待补充';
     return hasDeferredDay(deferred, dayNumber) ? '待补充' : '已完成';
   }
   if (dayNumber === firstIncomplete) return '进行中';

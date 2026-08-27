@@ -1630,6 +1630,368 @@ select:focus-visible {
   line-height: 1.7;
 }
 
+/* 第四周：把前面已经形成的答案直接组装成购买入口 */
+.fourth-week-form .single-task-block > div {
+  min-width: 0;
+}
+
+.compact-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.carried-summary,
+.current-offer-strip {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.carried-summary > span,
+.carried-summary > strong,
+.current-offer-strip > span,
+.current-offer-strip > strong {
+  padding: 15px 18px;
+  line-height: 1.65;
+}
+
+.carried-summary > span,
+.current-offer-strip > span {
+  background: var(--ink);
+  color: var(--paper-light);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.carried-summary > strong,
+.current-offer-strip > strong {
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.carried-summary > span:nth-of-type(2),
+.carried-summary > strong:nth-of-type(2) {
+  border-top: 1px solid var(--ink);
+}
+
+.compact-line-editor {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.compact-line-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 42px;
+  align-items: stretch;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.compact-line-row > span {
+  display: grid;
+  place-items: center;
+  background: var(--pink);
+  color: #a74868;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.day-content .compact-line-row input[type="text"] {
+  min-height: 52px;
+  margin: 0;
+  padding: 11px 14px;
+  border-width: 0 0 0 1px;
+  font-size: 15px;
+}
+
+.compact-line-row > button {
+  border: 0;
+  border-left: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.fourth-week-field-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.fourth-week-field-list label {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.fourth-week-field-list label > span {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  background: var(--pink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.fourth-week-field-list select,
+.day-content .fourth-week-field-list input[type="text"],
+.day-content .fourth-week-field-list textarea {
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 13px 16px;
+  border: 0;
+  border-left: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper-light);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.day-content .fourth-week-field-list textarea {
+  min-height: 74px;
+}
+
+.price-context {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border-left: 6px solid var(--pink);
+  background: var(--paper);
+}
+
+.price-context span,
+.price-input > span {
+  display: block;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.price-context p {
+  margin: 8px 0 0;
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.price-input {
+  margin-top: 16px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  border: 1px solid var(--ink);
+  background: var(--pink);
+}
+
+.day-content .price-input input[type="text"] {
+  margin: 0;
+  padding: 13px 16px;
+  background: var(--paper-light);
+}
+
+.purchase-evidence-list,
+.buyer-test-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.purchase-evidence-row,
+.buyer-test-row {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 0.75fr) minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.purchase-evidence-row > span,
+.buyer-test-row > span {
+  padding-top: 12px;
+  color: #a74868;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.purchase-evidence-row label > span,
+.buyer-test-row label > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.day-content .purchase-evidence-row input[type="text"],
+.day-content .buyer-test-row input[type="text"],
+.day-content .buyer-test-row textarea {
+  min-height: 52px;
+  margin: 0;
+  padding: 11px 13px;
+  background: var(--paper-light);
+  font-size: 14px;
+}
+
+.day-content .buyer-test-row textarea {
+  min-height: 76px;
+}
+
+.day-content .full-width-input {
+  min-height: 58px;
+  margin-top: 16px;
+}
+
+.centered-action {
+  margin: 24px auto;
+  display: block;
+}
+
+.purchase-page-editor {
+  position: relative;
+}
+
+.day-content .purchase-page-editor textarea {
+  min-height: 320px;
+  margin: 0;
+  padding: 20px 20px 46px;
+  background: var(--paper-light);
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.purchase-page-editor > span {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  padding: 3px 8px;
+  background: var(--paper-light);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.purchase-page-preview {
+  margin: 0;
+  padding: 20px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--paper-light);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.revision-signal-grid {
+  margin: 18px 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.revision-signal-grid button {
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.revision-signal-grid button.is-selected {
+  background: var(--pink);
+  box-shadow: inset 0 -4px 0 #d980a2;
+}
+
+.program-complete-page {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+.program-complete-card {
+  width: min(1180px, 100%);
+  padding: clamp(42px, 6vw, 78px);
+  position: relative;
+  border: 2px solid var(--paper-light);
+  background: var(--pink);
+  box-shadow: 10px 10px 0 rgba(255, 250, 240, 0.9);
+}
+
+.program-complete-card > span {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.program-complete-card > h1 {
+  margin: 20px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(44px, 6vw, 76px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.program-complete-card > p {
+  max-width: 760px;
+  margin: 20px 0 0;
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.program-result-list {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.program-result-list article {
+  min-height: 92px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.program-result-list span {
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.program-result-list strong {
+  font-family: var(--serif);
+  font-size: 20px;
+}
+
+.program-complete-card .program-complete-note {
+  max-width: none;
+  padding: 17px 20px;
+  border-left: 6px solid var(--ink);
+  background: rgba(255, 250, 240, 0.5);
+  font-weight: 750;
+}
+
+.program-complete-actions {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .audit-usage-steps {
   margin: 20px 0 0;
   padding: 0;
@@ -3462,6 +3824,50 @@ select:focus-visible {
 
   .stage-card {
     min-height: 280px;
+  }
+
+  .carried-summary,
+  .current-offer-strip,
+  .fourth-week-field-list label,
+  .price-input {
+    grid-template-columns: 1fr;
+  }
+
+  .carried-summary > strong,
+  .current-offer-strip > strong,
+  .fourth-week-field-list select,
+  .day-content .fourth-week-field-list input[type="text"],
+  .day-content .fourth-week-field-list textarea {
+    border-left: 0;
+    border-top: 1px solid var(--ink);
+  }
+
+  .carried-summary > span:nth-of-type(2) {
+    border-top: 1px solid var(--ink);
+  }
+
+  .carried-summary > strong:nth-of-type(2) {
+    border-top: 1px solid var(--ink);
+  }
+
+  .purchase-evidence-row,
+  .buyer-test-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .purchase-evidence-row label:last-child,
+  .buyer-test-row label:last-child {
+    grid-column: 2;
+  }
+
+  .revision-signal-grid,
+  .program-result-list {
+    grid-template-columns: 1fr;
+  }
+
+  .program-complete-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
