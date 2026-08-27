@@ -835,7 +835,7 @@ export default function Home() {
                           ? 15
                           : currentDay >= 15 && currentDay <= 19 && previousValue !== value
                             ? currentDay + 1
-                            : currentDay === 20 && id === 'contentAudit' && previousValue !== value
+                            : currentDay === 20 && previousValue !== value
                               ? 21
                               : null;
     const dependentSelectionWillBeEmpty =
@@ -3014,6 +3014,7 @@ function ThirdWeekWritingPage({
         <span className="task-number">03</span>
         <div>
           <h2>开始写正文</h2>
+          <p className="content-word-guide">字数建议：200–500 字</p>
           <div className="content-paragraph-list">
             {config.sections.map((section) => (
               <label key={section.id}>
@@ -3051,6 +3052,22 @@ function DayTwentyAuditPage({
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const finalArticles = Object.entries(contentWritingConfigs).map(([day, config]) => {
+    const dayNumber = Number(day);
+    const finalId = `finalArticle${dayNumber}`;
+    const mergedDraft = [
+      answers[keyFor(dayNumber, config.titleId)]?.trim() ?? '',
+      ...config.sections.map((section) => answers[keyFor(dayNumber, section.id)]?.trim() ?? ''),
+    ].filter(Boolean).join('\n\n');
+    return {
+      dayNumber,
+      finalId,
+      name: config.name,
+      value: answers[keyFor(20, finalId)] === undefined
+        ? mergedDraft
+        : answers[keyFor(20, finalId)],
+    };
+  });
   const articles = Object.entries(contentWritingConfigs).map(([day, config]) => {
     const dayNumber = Number(day);
     const title = answers[keyFor(dayNumber, config.titleId)]?.trim() || '（未填写）';
@@ -3105,6 +3122,7 @@ ${articles}`;
   };
 
   const finishAudit = () => {
+    finalArticles.forEach((article) => onAnswer(article.finalId, article.value));
     onAnswer('contentAudit', 'completed');
     onSubmit();
   };
@@ -3147,6 +3165,30 @@ ${articles}`;
               </button>
             </div>
             {promptOpen && <pre className="audit-prompt-content">{auditPrompt}</pre>}
+          </div>
+        </div>
+      </section>
+
+      <section className="single-task-block audit-final-section">
+        <span className="task-number">03</span>
+        <div>
+          <h2>最终版保存</h2>
+          <p>在这里优化出最终版，可以利用 AI 来优化。</p>
+          <div className="audit-final-article-list">
+            {finalArticles.map((article) => (
+              <article className="audit-final-article" key={article.dayNumber}>
+                <h3>{article.name}</h3>
+                <div className="audit-final-editor">
+                  <AutoGrowTextarea
+                    value={article.value}
+                    aria-label={`${article.name}最终版`}
+                    placeholder={`前面的${article.name}还没有内容。`}
+                    onChange={(event) => onAnswer(article.finalId, event.target.value)}
+                  />
+                  <span>{article.value.replace(/\s/g, '').length} 字</span>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
