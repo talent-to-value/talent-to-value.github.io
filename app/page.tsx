@@ -73,6 +73,7 @@ type ContentWritingSection = {
 type ContentWritingConfig = {
   name: string;
   purpose: string;
+  formulaLabel: string;
   formula: string;
   titleId: string;
   titlePlaceholder: string;
@@ -98,7 +99,8 @@ const clarityQuestions = [
 const contentWritingConfigs: Record<number, ContentWritingConfig> = {
   15: {
     name: '问题型内容',
-    purpose: '让读者认出自己',
+    purpose: '让读者觉得“这说的就是我”',
+    formulaLabel: '标题句式',
     formula: '你不是____，你是____。',
     titleId: 'problemTitle',
     titlePlaceholder: '例如：你不是缺流量，你是还没有说清楚别人为什么该找你',
@@ -108,15 +110,16 @@ const contentWritingConfigs: Record<number, ContentWritingConfig> = {
       '你不是不会写，你是还没有找到一个具体问题开始。',
     ],
     sections: [
-      { id: 'problemBelief', label: '第一段：写读者以为的问题', placeholder: '读者现在以为，自己卡住是因为什么？' },
-      { id: 'problemTruth', label: '第二段：写真正的问题', placeholder: '你认为他真正卡住的地方是什么？' },
-      { id: 'problemReason', label: '第三段：写你为什么这样判断', placeholder: '结合你的经历、观察或证据，说明判断依据。' },
-      { id: 'problemAction', label: '第四段：写他现在先做什么', placeholder: '给读者一个现在就能开始的具体动作。' },
+      { id: 'problemBelief', label: '第一段：写读者以为的问题', placeholder: '例如：我一直没有客户，是因为我的流量太少。' },
+      { id: 'problemTruth', label: '第二段：写真正的问题', placeholder: '例如：真正的问题不是流量，而是别人还看不懂我能解决什么。' },
+      { id: 'problemReason', label: '第三段：写你为什么这样判断', placeholder: '例如：我看过很多人持续发内容，却仍然没有收到具体咨询。' },
+      { id: 'problemAction', label: '第四段：写他现在先做什么', placeholder: '例如：先用一句话写清楚你帮谁、解决什么问题。' },
     ],
   },
   16: {
     name: '判断型内容',
-    purpose: '让别人看见你怎么取舍',
+    purpose: '让读者知道当你遇到这件事，你会怎么选',
+    formulaLabel: '标题句式',
     formula: '别先____，先____。',
     titleId: 'judgmentTitle',
     titlePlaceholder: '例如：别先追热点，先写清楚你帮谁',
@@ -126,15 +129,16 @@ const contentWritingConfigs: Record<number, ContentWritingConfig> = {
       '别先发更多内容，先看看别人为什么没有继续问。',
     ],
     sections: [
-      { id: 'judgmentCommon', label: '第一段：写大多数人会怎么做', placeholder: '面对这个问题时，大多数人通常会先做什么？' },
-      { id: 'judgmentProblem', label: '第二段：写这样做的问题是什么', placeholder: '这种做法为什么容易让人继续卡住？' },
-      { id: 'judgmentAdvice', label: '第三段：写你现在更建议怎么做', placeholder: '你建议把顺序改成什么？为什么？' },
-      { id: 'judgmentAction', label: '第四段：给一个具体动作', placeholder: '给读者一个今天就能完成的动作。' },
+      { id: 'judgmentCommon', label: '第一段：写大多数人会怎么做', placeholder: '例如：没有客户时，很多人会先追热点、增加更新频率。' },
+      { id: 'judgmentProblem', label: '第二段：写这样做的问题是什么', placeholder: '例如：如果价值没有说清，更多流量只会让更多人看完后离开。' },
+      { id: 'judgmentAdvice', label: '第三段：写你现在更建议怎么做', placeholder: '例如：我更建议先确定要反复回答的一个问题，再选平台和选题。' },
+      { id: 'judgmentAction', label: '第四段：给一个具体动作', placeholder: '例如：今天先写出你最想帮助的一类人，以及他最急的一个问题。' },
     ],
   },
   17: {
     name: '故事型内容',
-    purpose: '让别人知道你的判断从哪里来',
+    purpose: '让读者知道你的判断从哪里来',
+    formulaLabel: '正文结构',
     formula: '我以前____，后来我发现____，所以我现在____。',
     titleId: 'storyTitle',
     titlePlaceholder: '例如：我为什么不再先追热点',
@@ -144,14 +148,15 @@ const contentWritingConfigs: Record<number, ContentWritingConfig> = {
       '我以前以为客户嫌贵是价格问题，后来我发现是结果没有说清楚，所以我现在会先解释客户最终能得到什么。',
     ],
     sections: [
-      { id: 'storyBefore', label: '第一段：写“我以前……”', placeholder: '你以前相信什么，或者习惯怎么做？' },
-      { id: 'storyDiscovery', label: '第二段：写“后来我发现……”', placeholder: '哪件具体经历让你改变了看法？' },
-      { id: 'storyNow', label: '第三段：写“所以我现在……”', placeholder: '你现在形成了什么判断，又会怎么行动？' },
+      { id: 'storyBefore', label: '第一段：写“我以前……”', placeholder: '例如：我以前以为内容做不好，是因为选题不够好。' },
+      { id: 'storyDiscovery', label: '第二段：写“后来我发现……”', placeholder: '例如：后来做了很多项目，我发现很多内容问题发生得更早：价值根本没有说清楚。' },
+      { id: 'storyNow', label: '第三段：写“所以我现在……”', placeholder: '例如：所以我现在写内容前，会先问这篇到底为谁解决什么问题。' },
     ],
   },
   18: {
     name: '证据型内容',
-    purpose: '让别人相信你不是只会说',
+    purpose: '让读者相信你不是只会说，你真的做过',
+    formulaLabel: '正文结构',
     formula: '我做过____；它解决了____；它让我形成了____；这个判断对你意味着____。',
     titleId: 'evidenceTitle',
     titlePlaceholder: '例如：做完这份工作清单后，我更确定流程比提醒有用',
@@ -161,16 +166,17 @@ const contentWritingConfigs: Record<number, ContentWritingConfig> = {
       '我帮朋友改过多份简历，这让我发现很多人不是没有经历，而是没有把经历和岗位需要连接起来。',
     ],
     sections: [
-      { id: 'contentEvidenceDid', label: '第一段：写我做过什么', placeholder: '选择一个作品、过程、结果或反馈，写清你做过什么。' },
-      { id: 'contentEvidenceSolved', label: '第二段：写它解决了什么问题', placeholder: '这件事具体解决了谁的什么问题？' },
-      { id: 'contentEvidenceJudgment', label: '第三段：写它让我形成了什么判断', placeholder: '做完之后，你更确定了什么？' },
-      { id: 'contentEvidenceUse', label: '第四段：写这个判断对读者有什么用', placeholder: '这个判断能帮助读者避免什么，或者先做什么？' },
+      { id: 'contentEvidenceDid', label: '第一段：写我做过什么', placeholder: '例如：我整理过一份新人工作清单，把入职后最常遇到的任务排成了步骤。' },
+      { id: 'contentEvidenceSolved', label: '第二段：写它解决了什么问题', placeholder: '例如：它减少了新人反复询问、负责人反复解释的问题。' },
+      { id: 'contentEvidenceJudgment', label: '第三段：写它让我形成了什么判断', placeholder: '例如：这件事让我更确定，好流程不是多提醒，而是让人能自己往下走。' },
+      { id: 'contentEvidenceUse', label: '第四段：写这个判断对读者有什么用', placeholder: '例如：如果你的团队总在重复回答同类问题，先把第一次交付拆成清单。' },
     ],
   },
   19: {
     name: '产品入口型内容',
     purpose: '让读者知道怎么买你',
-    formula: '如果你是____，现在卡在____，我可以帮你____。',
+    formulaLabel: '正文结构',
+    formula: '谁适合 → 现在卡在哪里 → 不解决会继续发生什么 → 我能帮你完成哪一步 → 交付什么 → 不适合谁 → 怎么开始',
     titleId: 'offerTitle',
     titlePlaceholder: '例如：如果你的服务很好，但客户还是看不懂你具体做什么',
     examples: [
@@ -179,13 +185,13 @@ const contentWritingConfigs: Record<number, ContentWritingConfig> = {
       '如果你总有目标却执行不下去，我可以帮你把目标拆成一周可以完成的具体安排。',
     ],
     sections: [
-      { id: 'offerFit', label: '第一段：写谁适合', placeholder: '这项服务适合什么样的人？' },
-      { id: 'offerProblem', label: '第二段：写他现在卡在哪里', placeholder: '他现在正在遇到什么具体问题？' },
-      { id: 'offerCost', label: '第三段：写这件事不解决会继续发生什么', placeholder: '如果不处理，这个问题会怎样反复出现？' },
-      { id: 'offerHelp', label: '第四段：写我能帮你完成哪一步', placeholder: '你能把他从哪里推进到哪里？' },
-      { id: 'offerDeliverable', label: '第五段：写具体交付什么', placeholder: '结束后，对方手里会具体得到什么？' },
-      { id: 'offerNotFit', label: '第六段：写不适合谁', placeholder: '哪些情况不适合这项服务？' },
-      { id: 'offerStart', label: '第七段：写怎么开始', placeholder: '读者下一步应该联系你、填写表单，还是购买？' },
+      { id: 'offerFit', label: '第一段：写谁适合', placeholder: '例如：这项服务适合已经有一些经验，却始终说不清自己能帮谁的独立顾问。' },
+      { id: 'offerProblem', label: '第二段：写他现在卡在哪里', placeholder: '例如：你做过很多项目，但每次自我介绍时还是只能列一堆标签。' },
+      { id: 'offerCost', label: '第三段：写这件事不解决会继续发生什么', placeholder: '例如：别人看完仍然不知道什么时候该找你，内容只能换来点赞，很难换来具体咨询。' },
+      { id: 'offerHelp', label: '第四段：写我能帮你完成哪一步', placeholder: '例如：我可以帮你把零散经验整理成一份能直接发给客户的服务说明。' },
+      { id: 'offerDeliverable', label: '第五段：写具体交付什么', placeholder: '例如：结束后，你会得到一句服务介绍、三个客户痛点和一页完整的服务说明。' },
+      { id: 'offerNotFit', label: '第六段：写不适合谁', placeholder: '例如：如果你还没有任何想要提供的能力或服务，这一版暂时不适合你。' },
+      { id: 'offerStart', label: '第七段：写怎么开始', placeholder: '例如：如果你想开始，请把你现在的自我介绍发给我，我会先判断这项服务是否适合你。' },
     ],
   },
 };
@@ -1276,7 +1282,19 @@ export default function Home() {
           </section>
 
           <section className="day-content">
-            {previewMode ? (
+            {currentDay >= 15 && currentDay <= 19 ? (
+              <ThirdWeekWritingPage
+                dayNumber={currentDay}
+                answers={answers}
+                previewMode={previewMode}
+                firstIncomplete={firstIncomplete}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => {
+                  if (previewMode) navigateToDay(firstIncomplete);
+                  else finishCurrentDay(missingIds);
+                }}
+              />
+            ) : previewMode ? (
               <PreviewDay day={activeDay} flow={flow} currentDay={firstIncomplete} onReturn={() => navigateToDay(firstIncomplete)} />
             ) : currentDay === 1 ? (
               <DayOneSinglePage
@@ -1372,13 +1390,6 @@ export default function Home() {
               <DayFourteenMergedPage
                 onBack={() => navigateToDay(13)}
                 onContinue={finishMergedDayFourteen}
-              />
-            ) : currentDay >= 15 && currentDay <= 19 ? (
-              <ThirdWeekWritingPage
-                dayNumber={currentDay}
-                answers={answers}
-                onAnswer={setAnswer}
-                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
               />
             ) : currentDay === 20 ? (
               <DayTwentyAuditPage
@@ -2942,11 +2953,15 @@ function DayFourteenMergedPage({
 function ThirdWeekWritingPage({
   dayNumber,
   answers,
+  previewMode,
+  firstIncomplete,
   onAnswer,
   onSubmit,
 }: {
   dayNumber: number;
   answers: AnswerMap;
+  previewMode: boolean;
+  firstIncomplete: number;
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
@@ -2965,11 +2980,10 @@ function ThirdWeekWritingPage({
         <span className="task-number">01</span>
         <div>
           <div className="content-writing-heading">
-            <h2>“{config.name}”</h2>
-            <strong>—— {config.purpose}</strong>
+            <h2>“{config.name}”—— {config.purpose}</h2>
           </div>
           <div className="content-title-formula">
-            <span>句式是：</span>
+            <span>{config.formulaLabel}：</span>
             <strong>{config.formula}</strong>
           </div>
           <ul className="content-title-examples">
@@ -2977,8 +2991,15 @@ function ThirdWeekWritingPage({
               <li key={example}><span>示例 {index + 1}</span>{example}</li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      <section className="single-task-block content-title-section">
+        <span className="task-number">02</span>
+        <div>
+          <h2>写下你的标题</h2>
           <label className="content-title-input">
-            <span>写下你的标题</span>
+            <span className="sr-only">写下你的标题</span>
             <input
               type="text"
               value={title}
@@ -2990,7 +3011,7 @@ function ThirdWeekWritingPage({
       </section>
 
       <section className="single-task-block content-draft-section">
-        <span className="task-number">02</span>
+        <span className="task-number">03</span>
         <div>
           <h2>开始写正文</h2>
           <div className="content-paragraph-list">
@@ -3010,7 +3031,9 @@ function ThirdWeekWritingPage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          保存，进入第 {dayNumber + 1} 关 →
+          {previewMode
+            ? `保存草稿，返回第 ${firstIncomplete} 关 →`
+            : `保存，进入第 ${dayNumber + 1} 关 →`}
         </button>
       </div>
     </div>
@@ -3372,7 +3395,7 @@ function DaySidebar({
       <nav ref={navRef}>
         {stages.map((stage) => (
           <section className="sidebar-stage" key={stage.id}>
-            <h2><span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>{stage.shortName}</h2>
+            <h2><span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>{stage.id === 3 ? '与用户产生连接' : stage.shortName}</h2>
             {days.filter((day) => day.stage === stage.id).map((day) => {
               const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
               return (

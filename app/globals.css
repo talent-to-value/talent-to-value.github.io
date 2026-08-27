@@ -1365,13 +1365,9 @@ select:focus-visible {
 
 .content-writing-heading h2 {
   margin-bottom: 4px;
-  font-size: 30px;
-}
-
-.content-writing-heading strong {
-  display: block;
-  font-family: var(--serif);
-  font-size: 21px;
+  font-size: clamp(23px, 2.4vw, 28px);
+  letter-spacing: -0.025em;
+  white-space: nowrap;
 }
 
 .content-title-formula {
@@ -1418,7 +1414,7 @@ select:focus-visible {
 }
 
 .content-title-input {
-  margin-top: 22px;
+  margin-top: 16px;
   display: block;
 }
 
@@ -1438,6 +1434,11 @@ select:focus-visible {
   background: var(--paper-light);
   color: var(--ink);
   font-size: 17px;
+}
+
+.content-title-section h2,
+.content-draft-section h2 {
+  font-size: 28px;
 }
 
 .content-paragraph-list {
@@ -3438,7 +3439,8 @@ select:focus-visible {
   }
 
   .content-writing-heading h2 {
-    font-size: 26px;
+    font-size: 24px;
+    white-space: normal;
   }
 
   .content-title-formula,
