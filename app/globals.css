@@ -1377,9 +1377,16 @@ select:focus-visible {
   background: var(--ink);
 }
 
+.week-checklist-page {
+  display: block;
+  padding-top: 64px;
+  padding-bottom: 76px;
+  overflow-y: auto;
+}
+
 .week-checklist-card,
 .week-complete-card {
-  width: min(860px, 100%);
+  width: min(1280px, 100%);
   padding: clamp(40px, 7vw, 88px);
   border: 2px solid var(--paper-light);
   background: var(--pink);
@@ -1387,7 +1394,8 @@ select:focus-visible {
 }
 
 .week-checklist-card {
-  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: clamp(42px, 5vw, 72px);
 }
 
 .week-checklist-heading > span,
@@ -1417,13 +1425,13 @@ select:focus-visible {
 .week-checklist-list {
   margin-top: 32px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .week-checklist-list article {
-  min-height: 180px;
-  padding: 20px;
+  min-height: 190px;
+  padding: 24px 26px;
   border: 1px solid var(--ink);
   background: var(--paper-light);
 }
@@ -1435,30 +1443,60 @@ select:focus-visible {
 .week-checklist-label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 16px;
   align-items: start;
 }
 
 .week-checklist-label > span,
-.week-checklist-label > small {
+.week-checklist-label small {
   color: #a74868;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.06em;
 }
 
+.week-checklist-label small {
+  display: block;
+  margin-top: 7px;
+}
+
 .week-checklist-label h2 {
   margin: 0;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1.4;
 }
 
 .week-checklist-list article > p {
-  margin: 18px 0 0;
+  margin: 24px 0 0 34px;
   white-space: pre-line;
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.checklist-edit-button {
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.week-checklist-editor {
+  width: calc(100% - 34px);
+  min-height: 110px;
+  margin: 20px 0 0 34px;
+  padding: 16px 18px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
   line-height: 1.75;
 }
 
@@ -1479,13 +1517,14 @@ select:focus-visible {
 }
 
 .week-complete-card h1 {
-  max-width: 650px;
+  max-width: none;
   margin: 22px 0 0;
   font-family: var(--serif);
-  font-size: clamp(40px, 7vw, 72px);
+  font-size: clamp(42px, 4.5vw, 62px);
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.08;
+  white-space: nowrap;
 }
 
 .week-complete-card p {
@@ -2480,6 +2519,10 @@ select:focus-visible {
     padding: 16px;
   }
 
+  .week-checklist-page {
+    padding: 20px 16px 34px;
+  }
+
   .week-checklist-card,
   .week-complete-card {
     min-height: calc(100dvh - 32px);
@@ -2487,8 +2530,13 @@ select:focus-visible {
     box-shadow: 6px 6px 0 rgba(255, 250, 240, 0.9);
   }
 
+  .week-checklist-card {
+    min-height: 0;
+  }
+
   .week-complete-card h1 {
-    font-size: 42px;
+    font-size: 40px;
+    white-space: normal;
   }
 
   .week-checklist-heading h1 {
@@ -2501,6 +2549,13 @@ select:focus-visible {
 
   .week-checklist-list article {
     min-height: 0;
+    padding: 20px;
+  }
+
+  .week-checklist-list article > p,
+  .week-checklist-editor {
+    width: 100%;
+    margin-left: 0;
   }
 
   .week-checklist-actions,

@@ -24,6 +24,12 @@ type SelectionStep = {
   max: number;
 };
 
+type WeekOneChecklistItem = {
+  id: 'introduction' | 'audience' | 'problems' | 'evidence';
+  label: string;
+  value: string;
+};
+
 type FlowStep =
   | { kind: 'prompt'; prompt: Prompt }
   | { kind: 'clarity' }
@@ -256,6 +262,75 @@ function firstFilled(...values: Array<string | undefined>) {
   return values.find((value) => value?.trim())?.trim() ?? '';
 }
 
+function WeekOneChecklistPage({
+  items,
+  onSave,
+}: {
+  items: WeekOneChecklistItem[];
+  onSave: (drafts: Record<WeekOneChecklistItem['id'], string>) => void;
+}) {
+  const [editingId, setEditingId] = useState<WeekOneChecklistItem['id'] | null>(null);
+  const [drafts, setDrafts] = useState<Record<WeekOneChecklistItem['id'], string>>(() => (
+    Object.fromEntries(items.map((item) => [item.id, item.value])) as Record<WeekOneChecklistItem['id'], string>
+  ));
+
+  return (
+    <main className="week-transition-page week-checklist-page">
+      <section className="week-checklist-card">
+        <header className="week-checklist-heading">
+          <span>WEEK 01 · CHECKLIST</span>
+          <h1>第一周结束，请检查下方内容是否 ready：</h1>
+          <p>这些内容会成为第二周整理证据、故事和代表作品的起点。需要调整时，可以直接在这里编辑。</p>
+        </header>
+        <div className="week-checklist-list">
+          {items.map((item, index) => {
+            const value = drafts[item.id] ?? '';
+            const editing = editingId === item.id;
+            return (
+              <article className={value.trim() ? 'is-ready' : 'is-missing'} key={item.id}>
+                <div className="week-checklist-label">
+                  <span>0{index + 1}</span>
+                  <div>
+                    <h2>{item.label}：</h2>
+                    <small>{value.trim() ? 'READY' : '待补充'}</small>
+                  </div>
+                  <button
+                    className="checklist-edit-button"
+                    type="button"
+                    onClick={() => setEditingId(editing ? null : item.id)}
+                  >
+                    {editing ? '完成编辑' : '编辑'}
+                  </button>
+                </div>
+                {editing ? (
+                  <AutoGrowTextarea
+                    className="week-checklist-editor"
+                    value={value}
+                    aria-label={`编辑${item.label}`}
+                    autoFocus
+                    placeholder="请填写这一项"
+                    onChange={(event) => setDrafts((previous) => ({
+                      ...previous,
+                      [item.id]: event.target.value,
+                    }))}
+                  />
+                ) : (
+                  <p>{value || '这一项还没有内容，点击“编辑”即可在这里补充。'}</p>
+                )}
+              </article>
+            );
+          })}
+        </div>
+        <footer className="week-checklist-actions">
+          <button className="main-button" type="button" onClick={() => onSave(drafts)}>
+            保存修改，查看第一周成果 <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </section>
+    </main>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
@@ -274,29 +349,28 @@ export default function Home() {
   const activeDayIsPartial = Object.entries(deferred).some(
     ([key, value]) => value && key.startsWith(`${currentDay}:`),
   );
-  const weekOneChecklist = [
+  const weekOneChecklist: WeekOneChecklistItem[] = [
     {
+      id: 'introduction',
       label: '一句话介绍',
       value: firstFilled(answers[keyFor(4, 'selectedValue')], answers[keyFor(6, 'statementValue')]),
-      day: 4,
     },
     {
+      id: 'audience',
       label: '我知道自己先服务哪类人',
       value: firstFilled(answers[keyFor(2, 'selectedAudience')]),
-      day: 2,
     },
     {
+      id: 'problems',
       label: '我列出了他们最常见的 3 个问题',
       value: firstFilled(answers[keyFor(3, 'topProblems')]),
-      day: 3,
     },
     {
+      id: 'evidence',
       label: '我有一句“为什么是我”的证据',
       value: firstFilled(answers[keyFor(5, 'evidenceSentence')], answers[keyFor(6, 'statementEvidence')]),
-      day: 5,
     },
   ];
-  const firstMissingWeekOneItem = weekOneChecklist.find((item) => !item.value);
 
   /* eslint-disable react-hooks/set-state-in-effect -- restoring device-local progress is intentional */
   useEffect(() => {
@@ -508,6 +582,45 @@ export default function Home() {
     window.scrollTo({ top: 0 });
   };
 
+  const saveWeekOneChecklist = (drafts: Record<WeekOneChecklistItem['id'], string>) => {
+    const introduction = drafts.introduction.trim();
+    const audience = drafts.audience.trim();
+    const problems = uniqueLines(drafts.problems).slice(0, 3);
+    const evidence = drafts.evidence.trim();
+
+    setAnswers((previous) => {
+      const next = { ...previous };
+      next[keyFor(2, 'selectedAudience')] = audience;
+      next[keyFor(3, 'problemCandidates')] = uniqueLines([
+        previous[keyFor(3, 'problemCandidates')] ?? '',
+        ...problems,
+      ].join('\n')).join('\n');
+      next[keyFor(3, 'topProblems')] = problems.join('\n');
+      next[keyFor(4, 'valueVersions')] = uniqueLines([
+        previous[keyFor(4, 'valueVersions')] ?? '',
+        introduction,
+      ].join('\n')).join('\n');
+      next[keyFor(4, 'selectedValue')] = introduction;
+      next[keyFor(5, 'evidenceSentence')] = evidence;
+      next[keyFor(6, 'statementValue')] = introduction;
+      next[keyFor(6, 'statementFit')] = audience;
+      [0, 1, 2].forEach((index) => {
+        next[keyFor(6, `statementProblem${index + 1}`)] = problems[index] ?? '';
+      });
+      next[keyFor(6, 'statementEvidence')] = evidence;
+      next[keyFor(6, 'optimizedStatement')] = '';
+      next[keyFor(6, 'firstStatement')] = [
+        introduction,
+        audience ? `适合：${audience}` : '',
+        problems.length ? `常见卡点：${problems.join('；')}` : '',
+        evidence,
+      ].filter(Boolean).join('\n');
+      return next;
+    });
+    setView('week-complete');
+    window.scrollTo({ top: 0 });
+  };
+
   if (!hydrated) return <main className="mvp-home" aria-busy="true" />;
 
   if (view === 'intro') {
@@ -612,43 +725,7 @@ export default function Home() {
   }
 
   if (view === 'week-checklist') {
-    return (
-      <main className="week-transition-page week-checklist-page">
-        <section className="week-checklist-card">
-          <header className="week-checklist-heading">
-            <span>WEEK 01 · CHECKLIST</span>
-            <h1>第一周结束，请检查下方内容是否 ready：</h1>
-            <p>这些内容会成为第二周整理证据、故事和代表作品的起点。</p>
-          </header>
-          <div className="week-checklist-list">
-            {weekOneChecklist.map((item, index) => (
-              <article className={item.value ? 'is-ready' : 'is-missing'} key={item.label}>
-                <div className="week-checklist-label">
-                  <span>0{index + 1}</span>
-                  <h2>{item.label}：</h2>
-                  <small>{item.value ? 'READY' : '待补充'}</small>
-                </div>
-                <p>{item.value || '这一项还没有内容，可以返回前面的关卡补充。'}</p>
-              </article>
-            ))}
-          </div>
-          <footer className="week-checklist-actions">
-            {firstMissingWeekOneItem && (
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => navigateToDay(firstMissingWeekOneItem.day)}
-              >
-                返回第 {firstMissingWeekOneItem.day} 关补充
-              </button>
-            )}
-            <button className="main-button" type="button" onClick={() => setView('week-complete')}>
-              确认，查看第一周成果 <span aria-hidden="true">→</span>
-            </button>
-          </footer>
-        </section>
-      </main>
-    );
+    return <WeekOneChecklistPage items={weekOneChecklist} onSave={saveWeekOneChecklist} />;
   }
 
   if (view === 'week-complete') {
@@ -656,7 +733,7 @@ export default function Home() {
       <main className="week-transition-page week-complete-page">
         <section className="week-complete-card">
           <span>WEEK 01 · COMPLETE</span>
-          <h1>恭喜你完成了第一周的任务</h1>
+          <h1>恭喜你完成了第一周的任务 🎆</h1>
           <p>你已经收获了一份可用的服务说明。接下来，我们进入第二周。</p>
           <button className="main-button" type="button" onClick={() => navigateToDay(8)}>
             进入第二周 <span aria-hidden="true">→</span>
