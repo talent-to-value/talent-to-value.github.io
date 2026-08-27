@@ -467,11 +467,9 @@ export const days: Day[] = [
     prompts: [
       {
         id: 'contentAudit',
-        label: '逐篇检查并记录偏差',
-        helper: '是否同一类问题 / 是否有你的判断 / 是否有具体动作 / 是否知道何时找你。',
+        label: '用 Prompt 检查五篇内容',
         mode: 'long',
       },
-      { id: 'rewritePlan', label: '需要删除或重写什么', mode: 'long' },
     ],
     checks: ['五篇共同指向一个问题', '每篇都有判断', '每篇都有动作', '入口型内容没有提前过度承诺'],
     sourcePages: '272',

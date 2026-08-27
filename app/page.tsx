@@ -829,7 +829,9 @@ export default function Home() {
                           ? 15
                           : currentDay >= 15 && currentDay <= 19 && previousValue !== value
                             ? currentDay + 1
-                            : null;
+                            : currentDay === 20 && id === 'contentAudit' && previousValue !== value
+                              ? 21
+                              : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -1265,7 +1267,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -1377,6 +1379,12 @@ export default function Home() {
                 answers={answers}
                 onAnswer={setAnswer}
                 onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
+            ) : currentDay === 20 ? (
+              <DayTwentyAuditPage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={() => finishCurrentDay([])}
               />
             ) : (
               <DayWorksheet
@@ -3003,6 +3011,126 @@ function ThirdWeekWritingPage({
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
           保存，进入第 {dayNumber + 1} 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayTwentyAuditPage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: () => void;
+}) {
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const articles = Object.entries(contentWritingConfigs).map(([day, config]) => {
+    const dayNumber = Number(day);
+    const title = answers[keyFor(dayNumber, config.titleId)]?.trim() || '（未填写）';
+    const body = config.sections.map((section) => (
+      `${section.label}\n${answers[keyFor(dayNumber, section.id)]?.trim() || '（未填写）'}`
+    )).join('\n\n');
+    return `【第 ${dayNumber} 天·${config.name}】\n标题：${title}\n\n${body}`;
+  }).join('\n\n--------------------\n\n');
+
+  const auditPrompt = `请帮我对下面 5 篇内容做一次宽松的整体检查。
+
+这不是逐字逐句的文案审校。请不要吹毛求疵，也不要为了提建议而强行找问题。只要五篇内容的方向大致一致，没有明显冲突或跑偏，就请明确告诉我：“整体方向一致，可以继续使用。”
+
+请检查四件事：
+1. 五篇内容是否大致指向同一类问题？
+2. 每篇内容是否都能让读者看见我的判断？
+3. 每篇内容是否都有具体、可理解的行动或帮助？
+4. 五篇放在一起，是否能让读者更清楚“什么时候可以来找我”？
+
+判断时请注意：
+- 大致一致即可，不要求五篇使用完全相同的词语、观点或结构。
+- 如果没有特别明显的问题，保留原稿就好，并简单说明为什么是 OK 的。
+- 只有当某篇明显不符合上述检查时，才指出具体是哪一篇、哪一段、哪个标准没有满足。
+- 优先给出最小修改建议，不要整篇重写；除非某篇完全跑偏。
+
+请按以下结构回答：
+A. 整体结论：是否方向一致
+B. 四项检查：逐项给出简短判断
+C. 明显问题：只列真正影响方向的部分；如果没有，就写“没有明显问题”
+D. 最小修改建议：只针对 C 中的问题给建议
+
+以下是我的 5 篇内容：
+
+${articles}`;
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(auditPrompt);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = auditPrompt;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+    setCopied(true);
+    onAnswer('contentAudit', 'prompt-copied');
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const finishAudit = () => {
+    onAnswer('contentAudit', 'completed');
+    onSubmit();
+  };
+
+  return (
+    <div className="single-day-form day-twenty-audit-form">
+      <section className="single-task-block audit-purpose-section">
+        <span className="task-number">01</span>
+        <div>
+          <h2>这一天要做什么？</h2>
+          <p>把前面写好的 5 篇内容放在一起，检查它们是否在共同说明你能为读者解决什么问题。</p>
+          <div className="audit-check-list">
+            <div><span>01</span><strong>是否指向同一类问题？</strong></div>
+            <div><span>02</span><strong>是否都有你的判断？</strong></div>
+            <div><span>03</span><strong>是否都有具体行动？</strong></div>
+            <div><span>04</span><strong>是否让读者知道什么时候该找你？</strong></div>
+          </div>
+          <p className="audit-purpose-result">这 5 篇内容最终要共同完成一件事：让别人理解你的价值。</p>
+        </div>
+      </section>
+
+      <section className="single-task-block audit-usage-section">
+        <span className="task-number">02</span>
+        <div>
+          <h2>怎么使用？</h2>
+          <ol className="audit-usage-steps">
+            <li><span>1</span><p>点击“一键复制”，工具会自动把你前面写好的 5 篇内容带入 Prompt。</p></li>
+            <li><span>2</span><p>打开任意一个大模型，粘贴并发送。</p></li>
+            <li><span>3</span><p>查看整体方向是否一致；只处理模型指出的明显问题。</p></li>
+          </ol>
+
+          <div className={`audit-prompt-panel${promptOpen ? ' is-open' : ''}`}>
+            <div className="audit-prompt-toolbar">
+              <button type="button" className="audit-expand-button" onClick={() => setPromptOpen((open) => !open)}>
+                <span aria-hidden="true">{promptOpen ? '−' : '+'}</span>
+                {promptOpen ? '收起 Prompt' : '展开 Prompt'}
+              </button>
+              <button type="button" className="audit-copy-button" onClick={copyPrompt}>
+                {copied ? '✓ 已复制' : '一键复制'}
+              </button>
+            </div>
+            {promptOpen && <pre className="audit-prompt-content">{auditPrompt}</pre>}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={finishAudit}>
+          我已完成检查，进入第 21 关 →
         </button>
       </div>
     </div>
