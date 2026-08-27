@@ -40,6 +40,18 @@ type WorkEvidence = {
 
 type ResultEvidenceMap = Record<string, string>;
 
+type FeedbackRecord = {
+  id: string;
+  workId: string;
+  feedback: string;
+};
+
+type CognitionRecord = {
+  id: string;
+  workId: string;
+  story: string;
+};
+
 type FlowStep =
   | { kind: 'prompt'; prompt: Prompt }
   | { kind: 'clarity' }
@@ -117,6 +129,54 @@ function parseResultEvidence(value: string, works: WorkEvidence[]): ResultEviden
     // Preserve a result written in the previous single-textarea interface.
   }
   return works[0] ? { [works[0].id]: value } : {};
+}
+
+function parseFeedbackRecords(value: string, works: WorkEvidence[]): FeedbackRecord[] {
+  if (!value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.flatMap((item, index) => {
+        if (!item || typeof item !== 'object') return [];
+        const candidate = item as Partial<FeedbackRecord>;
+        return [{
+          id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `feedback-${index + 1}`,
+          workId: typeof candidate.workId === 'string' ? candidate.workId : '',
+          feedback: typeof candidate.feedback === 'string' ? candidate.feedback : '',
+        }];
+      });
+    }
+  } catch {
+    // Preserve feedback written in the previous single-textarea interface.
+  }
+  return [{ id: 'feedback-1', workId: works[0]?.id ?? '', feedback: value }];
+}
+
+function parseCognitionRecords(value: string, works: WorkEvidence[]): CognitionRecord[] {
+  if (!value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.flatMap((item, index) => {
+        if (!item || typeof item !== 'object') return [];
+        const candidate = item as Partial<CognitionRecord>;
+        return [{
+          id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `cognition-${index + 1}`,
+          workId: typeof candidate.workId === 'string' ? candidate.workId : '',
+          story: typeof candidate.story === 'string' ? candidate.story : '',
+        }];
+      });
+    }
+  } catch {
+    // Preserve stories written in the previous single-textarea interface.
+  }
+  return [{ id: 'cognition-1', workId: works[0]?.id ?? '', story: value }];
+}
+
+function nextRecordId(prefix: string, records: Array<{ id: string }>) {
+  let index = records.length + 1;
+  while (records.some((record) => record.id === `${prefix}-${index}`)) index += 1;
+  return `${prefix}-${index}`;
 }
 
 function AutoGrowTextarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -409,7 +469,9 @@ export default function Home() {
   const flow = useMemo(() => getFlow(activeDay), [activeDay]);
   const completedCount = days.filter((day) => completed[String(day.day)]).length;
   const firstIncomplete = days.find((day) => !completed[String(day.day)])?.day ?? 30;
-  const activeDayIsPartial = Object.entries(deferred).some(
+  const activeDayIsPartial = (
+    currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting'
+  ) || Object.entries(deferred).some(
     ([key, value]) => value && key.startsWith(`${currentDay}:`),
   );
   const weekOneChecklist: WeekOneChecklistItem[] = [
@@ -515,7 +577,11 @@ export default function Home() {
                   ? 9
                   : currentDay === 9 && id === 'resultEvidence' && previousValue !== value
                     ? 10
-                    : null;
+                    : currentDay === 10 && id === 'specificFeedback' && previousValue !== value
+                      ? 11
+                      : currentDay === 11 && id === 'stories' && previousValue !== value
+                        ? 12
+                        : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -781,6 +847,7 @@ export default function Home() {
         </section>
         <LevelList
           open={levelsOpen}
+          answers={answers}
           completed={completed}
           deferred={deferred}
           firstIncomplete={firstIncomplete}
@@ -829,6 +896,7 @@ export default function Home() {
     <main className="mvp-day">
       <DaySidebar
         currentDay={currentDay}
+        answers={answers}
         completed={completed}
         deferred={deferred}
         firstIncomplete={firstIncomplete}
@@ -851,14 +919,16 @@ export default function Home() {
           <section className="day-orientation">
             <div className="day-kicker-row">
               <span>第 {activeStage.id} 周 · {activeStage.title}</span>
-              {activeDayIsPartial && <strong>待补充</strong>}
+              {activeDayIsPartial && (
+                <strong>{currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting' ? '反馈待补充' : '待补充'}</strong>
+              )}
             </div>
             <h1>{activeDay.title}</h1>
             {currentDay === 5 ? (
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -936,6 +1006,21 @@ export default function Home() {
                 onAnswer={setAnswer}
                 onSubmit={(missingIds) => finishCurrentDay(missingIds)}
               />
+            ) : currentDay === 10 ? (
+              <DayTenSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(status, missingIds) => {
+                  setAnswer('feedbackStatus', status);
+                  finishCurrentDay(missingIds);
+                }}
+              />
+            ) : currentDay === 11 ? (
+              <DayElevenSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
             ) : (
               <DayWorksheet
                 day={activeDay}
@@ -953,6 +1038,7 @@ export default function Home() {
 
       <LevelList
         open={levelsOpen}
+        answers={answers}
         completed={completed}
         deferred={deferred}
         firstIncomplete={firstIncomplete}
@@ -2029,6 +2115,220 @@ function DayNineSinglePage({
   );
 }
 
+function DayTenSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (status: 'waiting' | 'complete', missingIds: string[]) => void;
+}) {
+  const works = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const storedRecords = parseFeedbackRecords(answers[keyFor(10, 'specificFeedback')] ?? '', works);
+  const records = storedRecords.length ? storedRecords : [{
+    id: 'feedback-1',
+    workId: '',
+    feedback: '',
+  }];
+  const hasFeedback = records.some((record) => record.workId && record.feedback.trim());
+
+  const saveRecords = (nextRecords: FeedbackRecord[]) => {
+    onAnswer('specificFeedback', JSON.stringify(nextRecords));
+  };
+
+  const updateRecord = (id: string, patch: Partial<FeedbackRecord>) => {
+    saveRecords(records.map((record) => (record.id === id ? { ...record, ...patch } : record)));
+  };
+
+  return (
+    <div className="single-day-form feedback-day-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>什么反馈值得收集？</h2>
+          <p>找到别人的反馈。聊天记录、评论、转介绍、读者私信都可以，只收具体的反馈。多小的反馈都可以写，只要足够具体。</p>
+          <ol className="feedback-guidance-list">
+            <li>
+              <strong>不要收空泛的评价</strong>
+              <span>例如：“很专业”“很有帮助”“收获很大”。</span>
+            </li>
+            <li>
+              <strong>收下能够说明具体变化的反馈</strong>
+              <span>例如：“我终于知道怎么介绍自己的服务了”“你帮我把一堆散的卖点理顺了”“我第一次意识到问题不在内容，而在价值没说清”“这个版本发出去以后，客户问得更具体了”。</span>
+            </li>
+          </ol>
+
+          <div className="feedback-empty-guide">
+            <h3>暂时没有反馈怎么办？</h3>
+            <ul>
+              <li>仔细回顾一下。反馈不需要很正式，也不需要来自大型项目；朋友使用后的感受、别人日常给你的具体评价都可以。</li>
+              <li>如果确实没有，选择一个小作品让朋友测试，现场收集反馈。你可以先把这一关标记为“反馈待补充”，继续后面的步骤。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>填写反馈</h2>
+          <div className="feedback-entry-list">
+            {records.map((record, index) => (
+              <div className="feedback-entry-row" key={record.id}>
+                <label>
+                  <span>作品</span>
+                  <select
+                    value={record.workId}
+                    aria-label={`第 ${index + 1} 条反馈对应的作品`}
+                    onChange={(event) => updateRecord(record.id, { workId: event.target.value })}
+                  >
+                    <option value="">选择作品</option>
+                    {works.map((work) => <option value={work.id} key={work.id}>{work.title}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>别人的反馈</span>
+                  <AutoGrowTextarea
+                    value={record.feedback}
+                    aria-label={`第 ${index + 1} 条反馈内容`}
+                    placeholder="把对方的原话写下来"
+                    onChange={(event) => updateRecord(record.id, { feedback: event.target.value })}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+          <button
+            className="linked-add-button"
+            type="button"
+            onClick={() => saveRecords([
+              ...records,
+              { id: nextRecordId('feedback', records), workId: '', feedback: '' },
+            ])}
+          >
+            <span aria-hidden="true">＋</span> 添加一条反馈
+          </button>
+        </div>
+      </section>
+
+      <div className="single-day-submit feedback-submit-actions">
+        <button className="secondary-button" type="button" onClick={() => onSubmit('waiting', ['specificFeedback'])}>
+          后续我会继续补充反馈
+        </button>
+        <button className="main-button" type="button" disabled={!hasFeedback} onClick={() => onSubmit('complete', [])}>
+          已完成反馈，进入第 11 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayElevenSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const works = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const storedRecords = parseCognitionRecords(answers[keyFor(11, 'stories')] ?? '', works);
+  const records = storedRecords.length ? storedRecords : [{
+    id: 'cognition-1',
+    workId: '',
+    story: '',
+  }];
+  const hasCognition = records.some((record) => record.workId && record.story.trim());
+
+  const saveRecords = (nextRecords: CognitionRecord[]) => {
+    onAnswer('stories', JSON.stringify(nextRecords));
+  };
+
+  const updateRecord = (id: string, patch: Partial<CognitionRecord>) => {
+    saveRecords(records.map((record) => (record.id === id ? { ...record, ...patch } : record)));
+  };
+
+  return (
+    <div className="single-day-form cognition-day-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>从具体事情里，提炼你的认知变化</h2>
+          <p>前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
+          <div className="cognition-formula">我以前……后来我发现……所以我现在……</div>
+          <h3 className="example-section-title">下方是两个示例</h3>
+
+          <div className="cognition-example-list">
+            <article>
+              <h4>写作场景</h4>
+              <p className="negative-example"><strong>不要写：</strong>我以前不会写作，后来坚持练习，终于学会了写作。</p>
+              <p className="positive-example"><strong>应该写：</strong>我以前以为写不出来是因为没有灵感，后来我发现真正让我卡住的是没有明确的问题和具体素材，所以我现在写文章前，会先确定一个真实问题，再去寻找相关经历和例子。</p>
+            </article>
+            <article>
+              <h4>做产品场景</h4>
+              <p className="negative-example"><strong>不要写：</strong>我从零开始学会了做产品，只要坚持就一定能成功。</p>
+              <p className="positive-example"><strong>应该写：</strong>我以前总想等所有条件成熟再开始，后来我发现一个粗糙但能使用的版本，比停留在想法里更容易得到真实反馈，所以我现在会先做出最小版本，再根据使用情况继续修改。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>接下来开始写吧</h2>
+          <div className="cognition-formula compact-formula">我以前……后来我发现……所以我现在……</div>
+          <div className="cognition-entry-list">
+            {records.map((record, index) => (
+              <div className="cognition-entry-row" key={record.id}>
+                <select
+                  value={record.workId}
+                  aria-label={`第 ${index + 1} 条认知变化对应的作品`}
+                  onChange={(event) => updateRecord(record.id, { workId: event.target.value })}
+                >
+                  <option value="">选择作品</option>
+                  {works.map((work) => <option value={work.id} key={work.id}>{work.title}</option>)}
+                </select>
+                <span aria-hidden="true">：</span>
+                <AutoGrowTextarea
+                  value={record.story}
+                  aria-label={`第 ${index + 1} 条认知变化`}
+                  placeholder="我以前……后来我发现……所以我现在……"
+                  onChange={(event) => updateRecord(record.id, { story: event.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            className="linked-add-button"
+            type="button"
+            onClick={() => saveRecords([
+              ...records,
+              { id: nextRecordId('cognition', records), workId: '', story: '' },
+            ])}
+          >
+            <span aria-hidden="true">＋</span> 再写一条
+          </button>
+        </div>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={() => onSubmit(hasCognition ? [] : ['stories'])}>
+          保存，进入第 12 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DayWorksheet({
   day,
   flow,
@@ -2216,17 +2516,22 @@ function hasDeferredDay(deferred: BooleanMap, dayNumber: number) {
 
 function dayStatus(
   dayNumber: number,
+  answers: AnswerMap,
   completed: BooleanMap,
   deferred: BooleanMap,
   firstIncomplete: number,
 ) {
-  if (completed[String(dayNumber)]) return hasDeferredDay(deferred, dayNumber) ? '待补充' : '已完成';
+  if (completed[String(dayNumber)]) {
+    if (dayNumber === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting') return '反馈待补充';
+    return hasDeferredDay(deferred, dayNumber) ? '待补充' : '已完成';
+  }
   if (dayNumber === firstIncomplete) return '进行中';
   return dayNumber > firstIncomplete ? '可预览' : '未完成';
 }
 
 function DaySidebar({
   currentDay,
+  answers,
   completed,
   deferred,
   firstIncomplete,
@@ -2234,6 +2539,7 @@ function DaySidebar({
   onSelect,
 }: {
   currentDay: number;
+  answers: AnswerMap;
   completed: BooleanMap;
   deferred: BooleanMap;
   firstIncomplete: number;
@@ -2260,12 +2566,12 @@ function DaySidebar({
           <section className="sidebar-stage" key={stage.id}>
             <h2><span>0{stage.id}</span>{stage.shortName}</h2>
             {days.filter((day) => day.stage === stage.id).map((day) => {
-              const status = dayStatus(day.day, completed, deferred, firstIncomplete);
+              const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
               return (
                 <button
                   type="button"
                   key={day.day}
-                  className={`${day.day === currentDay ? 'is-current ' : ''}${status === '已完成' ? 'is-complete ' : ''}${status === '待补充' ? 'is-partial' : ''}`}
+                  className={`${day.day === currentDay ? 'is-current ' : ''}${status === '已完成' ? 'is-complete ' : ''}${status.includes('待补充') ? 'is-partial' : ''}`}
                   onClick={() => onSelect(day.day)}
                 >
                   <span>{String(day.day).padStart(2, '0')}</span>
@@ -2283,6 +2589,7 @@ function DaySidebar({
 
 function LevelList({
   open,
+  answers,
   completed,
   deferred,
   firstIncomplete,
@@ -2290,6 +2597,7 @@ function LevelList({
   onSelect,
 }: {
   open: boolean;
+  answers: AnswerMap;
   completed: BooleanMap;
   deferred: BooleanMap;
   firstIncomplete: number;
@@ -2309,7 +2617,7 @@ function LevelList({
         </header>
         <div className="level-list">
           {days.map((day) => {
-            const status = dayStatus(day.day, completed, deferred, firstIncomplete);
+            const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
             return (
               <button type="button" key={day.day} onClick={() => onSelect(day.day)}>
                 <span>{String(day.day).padStart(2, '0')}</span>

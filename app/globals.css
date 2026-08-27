@@ -905,6 +905,213 @@ select:focus-visible {
   background: var(--paper-light);
 }
 
+.feedback-guidance-list {
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  counter-reset: feedback-guide;
+}
+
+.feedback-guidance-list li {
+  padding: 16px 18px 16px 54px;
+  position: relative;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  counter-increment: feedback-guide;
+}
+
+.feedback-guidance-list li::before {
+  content: counter(feedback-guide, decimal-leading-zero);
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.feedback-guidance-list strong,
+.feedback-guidance-list span {
+  display: block;
+}
+
+.feedback-guidance-list span {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.feedback-empty-guide {
+  margin-top: 18px;
+  padding: 20px;
+  border-left: 6px solid var(--pink);
+  background: rgba(231, 155, 179, 0.22);
+}
+
+.feedback-empty-guide h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+}
+
+.feedback-empty-guide ul {
+  margin: 14px 0 0;
+  padding-left: 20px;
+}
+
+.feedback-empty-guide li {
+  margin-top: 8px;
+  line-height: 1.75;
+}
+
+.feedback-entry-list,
+.cognition-entry-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.feedback-entry-row {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(200px, 0.38fr) minmax(0, 0.62fr);
+  gap: 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.feedback-entry-row label > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.feedback-entry-row select,
+.cognition-entry-row select {
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 42px 10px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper-light);
+  color: var(--ink);
+}
+
+.day-content .feedback-entry-row textarea {
+  min-height: 74px;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 15px;
+}
+
+.linked-add-button {
+  min-height: 48px;
+  margin-top: 12px;
+  padding: 0 18px;
+  border: 1px solid var(--ink);
+  background: var(--pink);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.linked-add-button span {
+  margin-right: 4px;
+  font-size: 20px;
+}
+
+.feedback-submit-actions {
+  justify-content: space-between;
+}
+
+.feedback-submit-actions .main-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.cognition-formula {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--ink);
+  background: var(--pink);
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.cognition-formula.compact-formula {
+  font-size: 18px;
+}
+
+.example-section-title {
+  margin: 26px 0 12px;
+  font-family: var(--serif);
+  font-size: 22px;
+}
+
+.cognition-example-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cognition-example-list article {
+  padding: 18px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.cognition-example-list h4 {
+  margin: 0 0 14px;
+  font-family: var(--serif);
+  font-size: 20px;
+}
+
+.cognition-example-list p {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.negative-example {
+  background: rgba(105, 107, 97, 0.12);
+  color: var(--muted);
+}
+
+.positive-example {
+  border-left: 5px solid var(--pink);
+  background: var(--paper-light);
+}
+
+.cognition-entry-row {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.32fr) auto minmax(0, 0.68fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.cognition-entry-row > span {
+  padding-top: 14px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.day-content .cognition-entry-row textarea {
+  min-height: 110px;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 15px;
+}
+
 .saved-answer {
   padding: 14px 16px;
   background: var(--paper);
@@ -2609,6 +2816,25 @@ select:focus-visible {
   .work-evidence-row,
   .result-work-card {
     padding: 16px;
+  }
+
+  .feedback-entry-row,
+  .cognition-example-list,
+  .cognition-entry-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cognition-entry-row > span {
+    display: none;
+  }
+
+  .feedback-submit-actions {
+    flex-direction: column-reverse;
+  }
+
+  .feedback-submit-actions .main-button,
+  .feedback-submit-actions .secondary-button {
+    width: 100%;
   }
 
   .add-work-button {
