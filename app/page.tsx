@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
 
-type View = 'intro' | 'overview' | 'day' | 'week-checklist' | 'week-complete';
+type View = 'intro' | 'overview' | 'day' | 'week-checklist' | 'week-complete' | 'week-two-checklist' | 'week-two-complete';
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
@@ -26,6 +26,11 @@ type SelectionStep = {
 
 type WeekOneChecklistItem = {
   id: 'introduction' | 'audience' | 'problems' | 'evidence';
+  label: string;
+  value: string;
+};
+
+type WeekTwoChecklistItem = {
   label: string;
   value: string;
 };
@@ -502,6 +507,45 @@ function WeekOneChecklistPage({
   );
 }
 
+function WeekTwoChecklistPage({
+  items,
+  onContinue,
+}: {
+  items: WeekTwoChecklistItem[];
+  onContinue: () => void;
+}) {
+  return (
+    <main className="week-transition-page week-checklist-page">
+      <section className="week-checklist-card">
+        <header className="week-checklist-heading">
+          <span>WEEK 02 · CHECKLIST</span>
+          <h1>第二周结束，请检查你已经整理好的内容：</h1>
+          <p>这些内容会成为第三周写作时直接调用的证据和素材。</p>
+        </header>
+        <div className="week-checklist-list week-two-checklist-list">
+          {items.map((item, index) => (
+            <article className={item.value.trim() ? 'is-ready' : 'is-missing'} key={item.label}>
+              <div className="week-checklist-label">
+                <span>0{index + 1}</span>
+                <div>
+                  <h2>{item.label}：</h2>
+                  <small>{item.value.trim() ? 'READY' : '待补充'}</small>
+                </div>
+              </div>
+              <p>{item.value || '这一项目前还没有内容，可以之后回到对应关卡补充。'}</p>
+            </article>
+          ))}
+        </div>
+        <footer className="week-checklist-actions">
+          <button className="main-button" type="button" onClick={onContinue}>
+            确认，查看第二周成果 <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </section>
+    </main>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
@@ -542,6 +586,47 @@ export default function Home() {
       id: 'evidence',
       label: '我有一句“为什么是我”的证据',
       value: firstFilled(answers[keyFor(5, 'evidenceSentence')], answers[keyFor(6, 'statementEvidence')]),
+    },
+  ];
+  const weekTwoWorks = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const weekTwoCognition = parseCognitionRecords(
+    answers[keyFor(11, 'stories')] ?? '',
+    weekTwoWorks,
+  ).filter((record) => record.story.trim());
+  const weekTwoRepresentatives = parseRepresentativeWorks(
+    answers[keyFor(13, 'representativeWorks')] ?? '',
+    weekTwoWorks,
+  );
+  const weekTwoChecklist: WeekTwoChecklistItem[] = [
+    {
+      label: '一份作品与证据清单',
+      value: weekTwoWorks.map((work) => [
+        work.title,
+        work.problem ? `解决：${work.problem}` : '',
+        work.proof ? `证明：${work.proof}` : '',
+      ].filter(Boolean).join('\n')).join('\n\n'),
+    },
+    {
+      label: '一组能证明判断的认知变化',
+      value: weekTwoCognition.map((record) => {
+        const work = weekTwoWorks.find((item) => item.id === record.workId);
+        return `${work?.title || '相关作品'}：${record.story}`;
+      }).join('\n\n'),
+    },
+    {
+      label: '1–3 个代表作品',
+      value: weekTwoRepresentatives.map((work) => [
+        work.what,
+        work.problem ? `解决：${work.problem}` : '',
+        work.proof ? `证明：${work.proof}` : '',
+      ].filter(Boolean).join('\n')).join('\n\n'),
+    },
+    {
+      label: '一页“为什么能信我”',
+      value: answers[keyFor(13, 'trustPage')] ?? '',
     },
   ];
 
@@ -782,7 +867,22 @@ export default function Home() {
     setCompleted((previous) => ({ ...previous, '13': true, '14': true }));
     setCurrentDay(15);
     setPreviewMode(false);
-    setView('day');
+    setView('week-two-checklist');
+    window.scrollTo({ top: 0 });
+  };
+
+  const finishMergedDayFourteen = () => {
+    setCompleted((previous) => ({ ...previous, '14': true }));
+    setDeferred((previous) => {
+      const next = { ...previous };
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith('14:')) delete next[key];
+      });
+      return next;
+    });
+    setCurrentDay(15);
+    setPreviewMode(false);
+    setView('week-two-checklist');
     window.scrollTo({ top: 0 });
   };
 
@@ -958,6 +1058,48 @@ export default function Home() {
           <button className="main-button" type="button" onClick={() => navigateToDay(8)}>
             进入第二周 <span aria-hidden="true">→</span>
           </button>
+          <div className="next-week-preview">
+            <strong>在第二周你会获得什么</strong>
+            <p>一份作品与证据清单、一组能证明判断的认知变化、1–3 个代表作品，以及一页“为什么能信我”。</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (view === 'week-two-checklist') {
+    return <WeekTwoChecklistPage items={weekTwoChecklist} onContinue={() => setView('week-two-complete')} />;
+  }
+
+  if (view === 'week-two-complete') {
+    return (
+      <main className="week-transition-page week-complete-page">
+        <section className="week-complete-card">
+          <span>WEEK 02 · COMPLETE</span>
+          <div className="week-firework" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <b />
+          </div>
+          <h1>恭喜你完成了第二周的任务</h1>
+          <p>你已经把散落的作品、变化和判断整理成了一套可以被别人看见的信任证据。接下来，我们进入第三周。</p>
+          <button className="main-button" type="button" onClick={() => navigateToDay(15)}>
+            进入第三周 <span aria-hidden="true">→</span>
+          </button>
+          <div className="next-week-preview">
+            <strong>在第三周你会获得什么</strong>
+            <p>5 篇能说明你价值的内容初稿，让别人看见你发现的问题、你的判断，以及你能够提供的帮助。</p>
+          </div>
         </section>
       </main>
     );
@@ -1103,7 +1245,7 @@ export default function Home() {
             ) : currentDay === 14 ? (
               <DayFourteenMergedPage
                 onBack={() => navigateToDay(13)}
-                onContinue={() => finishCurrentDay([])}
+                onContinue={finishMergedDayFourteen}
               />
             ) : (
               <DayWorksheet
@@ -2069,7 +2211,7 @@ function DayEightSinglePage({
           <details className="worksheet-help work-example">
             <summary>示例</summary>
             <div className="work-example-list">
-              <p><strong>公众号文章</strong><span>解决：读者想开始记账，却不知道第一步该做什么。</span><span>证明：我能把一个复杂方法讲成普通人可以照着做的步骤。</span></p>
+              <p><strong>记账相关的文章</strong><span>解决：读者想开始记账，却不知道第一步该做什么。</span><span>证明：我能把一个复杂方法讲成普通人可以照着做的步骤。</span></p>
               <p><strong>新同事工作清单</strong><span>解决：新人刚加入团队时，不知道每天该做什么、找谁确认。</span><span>证明：我能把零散的工作经验整理成清楚的流程。</span></p>
               <p><strong>简历梳理与修改</strong><span>解决：朋友经历很多，但简历上看不出优势和重点。</span><span>证明：我能从大量信息中找到重点，并把价值表达清楚。</span></p>
             </div>
@@ -2503,7 +2645,7 @@ function DayThirteenCombinedPage({
       `我带来过的具体变化：${changes || '________'}`,
       `我反复形成的判断：${judgments || '________'}`,
       `我不承诺${notPromise.trim() || '________'}，但我能帮你${canHelp.trim() || '________'}。`,
-    ].join('；');
+    ].join('；\n');
     onAnswer('trustPage', generated);
   };
 
@@ -2893,7 +3035,7 @@ function DaySidebar({
       <nav ref={navRef}>
         {stages.map((stage) => (
           <section className="sidebar-stage" key={stage.id}>
-            <h2><span>0{stage.id}</span>{stage.shortName}</h2>
+            <h2><span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>{stage.shortName}</h2>
             {days.filter((day) => day.stage === stage.id).map((day) => {
               const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
               return (

@@ -36,7 +36,7 @@ export const stages: Stage[] = [
   {
     id: 1,
     range: '01—07',
-    shortName: '被听懂',
+    shortName: '一份清晰的服务说明',
     title: '说清你是谁、帮谁、为什么值钱',
     question: '一个陌生人能不能复述你解决什么问题？',
     output: '一段能被复述的服务介绍',
