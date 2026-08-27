@@ -30,6 +30,16 @@ type WeekOneChecklistItem = {
   value: string;
 };
 
+type WorkEvidence = {
+  id: string;
+  title: string;
+  problem: string;
+  proof: string;
+  discarded: boolean;
+};
+
+type ResultEvidenceMap = Record<string, string>;
+
 type FlowStep =
   | { kind: 'prompt'; prompt: Prompt }
   | { kind: 'clarity' }
@@ -54,6 +64,59 @@ function uniqueLines(value: string) {
         .filter(Boolean),
     ),
   );
+}
+
+function parseWorkEvidence(value: string, legacyValue = ''): WorkEvidence[] {
+  if (value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item, index) => {
+          if (!item || typeof item !== 'object') return [];
+          const candidate = item as Partial<WorkEvidence>;
+          return [{
+            id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `work-${index + 1}`,
+            title: typeof candidate.title === 'string' ? candidate.title : '',
+            problem: typeof candidate.problem === 'string' ? candidate.problem : '',
+            proof: typeof candidate.proof === 'string' ? candidate.proof : '',
+            discarded: Boolean(candidate.discarded),
+          }];
+        });
+      }
+    } catch {
+      // Fall through to the legacy newline format.
+    }
+  }
+
+  return uniqueLines(legacyValue).map((title, index) => ({
+    id: `work-${index + 1}`,
+    title,
+    problem: '',
+    proof: '',
+    discarded: false,
+  }));
+}
+
+function nextWorkId(works: WorkEvidence[]) {
+  let index = works.length + 1;
+  while (works.some((work) => work.id === `work-${index}`)) index += 1;
+  return `work-${index}`;
+}
+
+function parseResultEvidence(value: string, works: WorkEvidence[]): ResultEvidenceMap {
+  if (!value.trim()) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return Object.fromEntries(
+        Object.entries(parsed as Record<string, unknown>)
+          .filter(([, result]) => typeof result === 'string'),
+      ) as ResultEvidenceMap;
+    }
+  } catch {
+    // Preserve a result written in the previous single-textarea interface.
+  }
+  return works[0] ? { [works[0].id]: value } : {};
 }
 
 function AutoGrowTextarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -448,7 +511,11 @@ export default function Home() {
               ? 6
               : currentDay === 6 && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence', 'optimizedStatement', 'firstStatement'].includes(id) && previousValue !== value
                 ? 7
-                : null;
+                : currentDay === 8 && id === 'workEvidence' && previousValue !== value
+                  ? 9
+                  : currentDay === 9 && id === 'resultEvidence' && previousValue !== value
+                    ? 10
+                    : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -791,7 +858,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -856,6 +923,18 @@ export default function Home() {
                 answers={answers}
                 onAnswer={setAnswer}
                 onSubmit={finishFirstWeek}
+              />
+            ) : currentDay === 8 ? (
+              <DayEightSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
+              />
+            ) : currentDay === 9 ? (
+              <DayNineSinglePage
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
               />
             ) : (
               <DayWorksheet
@@ -1723,6 +1802,227 @@ function DaySevenSinglePage({
       <div className="single-day-submit submit-only week-finish-submit">
         <button className="main-button" type="button" onClick={saveAndContinue}>
           这一关完成，我已收获一份可用的服务说明
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayEightSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const storedWorks = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  );
+  const works = storedWorks.length ? storedWorks : [{
+    id: 'work-1',
+    title: '',
+    problem: '',
+    proof: '',
+    discarded: false,
+  }];
+  const namedWorks = works.filter((work) => work.title.trim());
+  const keptWorks = namedWorks.filter((work) => !work.discarded);
+
+  const saveWorks = (nextWorks: WorkEvidence[]) => {
+    onAnswer('workEvidence', JSON.stringify(nextWorks));
+  };
+
+  const updateWork = (id: string, patch: Partial<WorkEvidence>) => {
+    saveWorks(works.map((work) => (work.id === id ? { ...work, ...patch } : work)));
+  };
+
+  const missing = keptWorks.length === 0
+    || keptWorks.some((work) => !work.problem.trim() || !work.proof.trim());
+
+  return (
+    <div className="single-day-form evidence-work-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>先写下来都做过什么</h2>
+          <details className="worksheet-help work-example">
+            <summary>查看书中的例子</summary>
+            <ul>
+              <li>小红书运营手册</li>
+              <li>好事发生 App</li>
+              <li>一篇关于价值表达的长文</li>
+            </ul>
+          </details>
+
+          <div className="work-title-list">
+            {works.map((work, index) => (
+              <div className="work-title-row" key={work.id}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <label className="sr-only" htmlFor={`work-title-${work.id}`}>作品 {index + 1}</label>
+                <input
+                  id={`work-title-${work.id}`}
+                  type="text"
+                  value={work.title}
+                  placeholder="作品名称"
+                  onChange={(event) => updateWork(work.id, { title: event.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="add-work-button"
+            type="button"
+            onClick={() => saveWorks([
+              ...works,
+              {
+                id: nextWorkId(works),
+                title: '',
+                problem: '',
+                proof: '',
+                discarded: false,
+              },
+            ])}
+          >
+            <span aria-hidden="true">＋</span> 新增一行
+          </button>
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>补充每个作品解决的问题与证明点</h2>
+          <details className="worksheet-help work-example">
+            <summary>查看书中的完整例子</summary>
+            <div className="work-example-list">
+              <p><strong>小红书运营手册</strong><span>解决：把零散经验整理成可以购买和反复使用的方法。</span><span>证明：我能把长期经验整理成产品。</span></p>
+              <p><strong>好事发生 App</strong><span>解决：把记录好事的需要做成可以实际使用的产品。</span><span>证明：产品也能表达价值观。</span></p>
+              <p><strong>关于价值表达的长文</strong><span>解决：把抽象问题讲成读者可以执行的动作。</span><span>证明：我能把抽象问题讲清楚。</span></p>
+            </div>
+          </details>
+
+          <div className="work-evidence-list">
+            {namedWorks.length ? namedWorks.map((work, index) => (
+              <article className={work.discarded ? 'work-evidence-row is-discarded' : 'work-evidence-row'} key={work.id}>
+                <header>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <h3>{work.title}</h3>
+                </header>
+                <div className="work-evidence-fields">
+                  <label>
+                    <span>解决了什么问题</span>
+                    <input
+                      type="text"
+                      value={work.problem}
+                      disabled={work.discarded}
+                      onChange={(event) => updateWork(work.id, { problem: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>能证明什么</span>
+                    <input
+                      type="text"
+                      value={work.proof}
+                      disabled={work.discarded}
+                      onChange={(event) => updateWork(work.id, { proof: event.target.value })}
+                    />
+                  </label>
+                </div>
+                <button
+                  className="discard-work-button"
+                  type="button"
+                  onClick={() => updateWork(work.id, { discarded: !work.discarded })}
+                >
+                  {work.discarded ? '恢复这一条' : '舍弃这一条'}
+                </button>
+              </article>
+            )) : (
+              <p className="empty-inline">先在上方写下作品名称。</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={() => onSubmit(missing ? ['workEvidence'] : [])}>
+          保存，进入第 9 关 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayNineSinglePage({
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const works = parseWorkEvidence(
+    answers[keyFor(8, 'workEvidence')] ?? '',
+    answers[keyFor(8, 'works')] ?? '',
+  ).filter((work) => work.title.trim() && !work.discarded);
+  const results = parseResultEvidence(answers[keyFor(9, 'resultEvidence')] ?? '', works);
+  const missing = works.length === 0 || works.some((work) => !results[work.id]?.trim());
+
+  const updateResult = (id: string, value: string) => {
+    onAnswer('resultEvidence', JSON.stringify({ ...results, [id]: value }));
+  };
+
+  return (
+    <div className="single-day-form result-work-form">
+      <section className="single-task-block">
+        <span className="task-number">01</span>
+        <div>
+          <h2>先看几个具体例子</h2>
+          <details className="worksheet-help result-examples">
+            <summary>展开查看行为、能力和业务变化</summary>
+            <div>
+              <p><strong>行为变化</strong><span>从一直想拍但没有开始，到发布第一条视频。</span></p>
+              <p><strong>能力变化</strong><span>从不知道怎么规划日程，到能独立安排一周计划。</span></p>
+              <p><strong>业务变化</strong><span>从产品介绍没人看懂，到客户能带着具体问题来咨询。</span></p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section className="single-task-block">
+        <span className="task-number">02</span>
+        <div>
+          <h2>写下每项作品带来的变化</h2>
+          <div className="result-work-list">
+            {works.length ? works.map((work) => (
+              <article className="result-work-card" key={work.id}>
+                <h3>{work.title}</h3>
+                <ul>
+                  <li><strong>解决了什么问题：</strong>{work.problem || '—'}</li>
+                  <li><strong>能证明什么：</strong>{work.proof || '—'}</li>
+                </ul>
+                <label htmlFor={`work-result-${work.id}`}>带来了什么样的变化</label>
+                <AutoGrowTextarea
+                  id={`work-result-${work.id}`}
+                  value={results[work.id] ?? ''}
+                  placeholder="例如：从不知道第一条视频拍什么，到能够确定选题并完成拍摄。"
+                  onChange={(event) => updateResult(work.id, event.target.value)}
+                />
+              </article>
+            )) : (
+              <p className="empty-inline">第 8 关还没有保留的作品。</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={() => onSubmit(missing ? ['resultEvidence'] : [])}>
+          保存，进入第 10 关 →
         </button>
       </div>
     </div>

@@ -44,7 +44,7 @@ export const stages: Stage[] = [
   {
     id: 2,
     range: '08—14',
-    shortName: '被相信',
+    shortName: '翻箱子，回答“我为什么信你”',
     title: '整理证据、故事和代表作品',
     question: '别人为什么愿意承担选择你的风险？',
     output: '一页让人相信你的证据说明',
@@ -261,10 +261,8 @@ export const days: Day[] = [
     prep: ['旧文章、产品、课程、手册', '服务方案、公开分享、可见交付物'],
     prompts: [
       {
-        id: 'works',
-        label: '列出做出来过的东西',
-        helper: '不要只列最成功的；每项后面补“解决什么 / 证明什么”。',
-        placeholder: '作品名｜解决的问题｜它证明我什么',
+        id: 'workEvidence',
+        label: '先列作品，再逐项补充证据',
         mode: 'long',
       },
     ],
@@ -274,20 +272,19 @@ export const days: Day[] = [
   {
     day: 9,
     stage: 2,
-    title: '整理结果证据',
+    title: '写变化',
     principle: '结果不只是大数字。对客户真正有意义的是事情发生了什么具体变化。',
-    output: '10 条“从…到…”的结果变化。',
+    output: '每项作品带来的具体变化。',
     prep: ['项目复盘', '前后版本', '客户行为或表达发生的变化'],
     prompts: [
       {
         id: 'resultEvidence',
-        label: '写 10 条“从…到…”',
+        label: '为每项作品写出“从什么到什么”',
         placeholder: '从介绍自己很散，到能说清服务对象',
-        mode: 'lines',
-        targetCount: 10,
+        mode: 'long',
       },
     ],
-    checks: ['描述了变化', '足够具体', '没有夸大', '与当前问题相关'],
+    checks: ['描述了变化', '足够具体', '没有夸大', '与作品相关'],
     sourcePages: '260–261',
   },
   {
