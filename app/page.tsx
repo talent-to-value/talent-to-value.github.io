@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
 
-type View = 'intro' | 'overview' | 'day' | 'week-complete';
+type View = 'intro' | 'overview' | 'day' | 'week-checklist' | 'week-complete';
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
@@ -252,6 +252,10 @@ function shortReason(day: Day) {
   return firstSentence ? `${firstSentence}。` : day.principle;
 }
 
+function firstFilled(...values: Array<string | undefined>) {
+  return values.find((value) => value?.trim())?.trim() ?? '';
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
@@ -270,6 +274,29 @@ export default function Home() {
   const activeDayIsPartial = Object.entries(deferred).some(
     ([key, value]) => value && key.startsWith(`${currentDay}:`),
   );
+  const weekOneChecklist = [
+    {
+      label: '一句话介绍',
+      value: firstFilled(answers[keyFor(4, 'selectedValue')], answers[keyFor(6, 'statementValue')]),
+      day: 4,
+    },
+    {
+      label: '我知道自己先服务哪类人',
+      value: firstFilled(answers[keyFor(2, 'selectedAudience')]),
+      day: 2,
+    },
+    {
+      label: '我列出了他们最常见的 3 个问题',
+      value: firstFilled(answers[keyFor(3, 'topProblems')]),
+      day: 3,
+    },
+    {
+      label: '我有一句“为什么是我”的证据',
+      value: firstFilled(answers[keyFor(5, 'evidenceSentence')], answers[keyFor(6, 'statementEvidence')]),
+      day: 5,
+    },
+  ];
+  const firstMissingWeekOneItem = weekOneChecklist.find((item) => !item.value);
 
   /* eslint-disable react-hooks/set-state-in-effect -- restoring device-local progress is intentional */
   useEffect(() => {
@@ -477,7 +504,7 @@ export default function Home() {
     });
     setCompleted((previous) => ({ ...previous, '7': true }));
     setPreviewMode(false);
-    setView('week-complete');
+    setView('week-checklist');
     window.scrollTo({ top: 0 });
   };
 
@@ -584,9 +611,49 @@ export default function Home() {
     );
   }
 
+  if (view === 'week-checklist') {
+    return (
+      <main className="week-transition-page week-checklist-page">
+        <section className="week-checklist-card">
+          <header className="week-checklist-heading">
+            <span>WEEK 01 · CHECKLIST</span>
+            <h1>第一周结束，请检查下方内容是否 ready：</h1>
+            <p>这些内容会成为第二周整理证据、故事和代表作品的起点。</p>
+          </header>
+          <div className="week-checklist-list">
+            {weekOneChecklist.map((item, index) => (
+              <article className={item.value ? 'is-ready' : 'is-missing'} key={item.label}>
+                <div className="week-checklist-label">
+                  <span>0{index + 1}</span>
+                  <h2>{item.label}：</h2>
+                  <small>{item.value ? 'READY' : '待补充'}</small>
+                </div>
+                <p>{item.value || '这一项还没有内容，可以返回前面的关卡补充。'}</p>
+              </article>
+            ))}
+          </div>
+          <footer className="week-checklist-actions">
+            {firstMissingWeekOneItem && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => navigateToDay(firstMissingWeekOneItem.day)}
+              >
+                返回第 {firstMissingWeekOneItem.day} 关补充
+              </button>
+            )}
+            <button className="main-button" type="button" onClick={() => setView('week-complete')}>
+              确认，查看第一周成果 <span aria-hidden="true">→</span>
+            </button>
+          </footer>
+        </section>
+      </main>
+    );
+  }
+
   if (view === 'week-complete') {
     return (
-      <main className="week-complete-page">
+      <main className="week-transition-page week-complete-page">
         <section className="week-complete-card">
           <span>WEEK 01 · COMPLETE</span>
           <h1>恭喜你完成了第一周的任务</h1>
@@ -1240,6 +1307,7 @@ function DaySixSinglePage({
 }) {
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState('');
+  const [editingStatement, setEditingStatement] = useState(false);
   const earlierProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
   const valueLine = answers[keyFor(6, 'statementValue')]
     ?? answers[keyFor(4, 'selectedValue')]
@@ -1372,7 +1440,17 @@ function DaySixSinglePage({
       <section className="service-statement-result">
         <h2>你的服务说明</h2>
         <div className="assembly-preview">
-          <p>{displayedStatement || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+          {editingStatement ? (
+            <AutoGrowTextarea
+              className="statement-result-editor"
+              value={displayedStatement}
+              aria-label="编辑你的服务说明"
+              autoFocus
+              onChange={(event) => onAnswer('optimizedStatement', event.target.value)}
+            />
+          ) : (
+            <p>{displayedStatement || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+          )}
           <span>{displayedStatement.length} 字</span>
         </div>
         <div className="optimize-actions">
@@ -1383,6 +1461,19 @@ function DaySixSinglePage({
             onClick={optimizeStatement}
           >
             {optimizing ? '正在优化…' : '不通顺？点击优化 →'}
+          </button>
+          <button
+            className="secondary-button edit-statement-button"
+            type="button"
+            disabled={!displayedStatement.trim()}
+            onClick={() => {
+              if (!editingStatement && !optimizedStatement.trim()) {
+                onAnswer('optimizedStatement', displayedStatement);
+              }
+              setEditingStatement((previous) => !previous);
+            }}
+          >
+            {editingStatement ? '完成编辑' : '编辑'}
           </button>
           {optimizeError && <p role="alert">{optimizeError}</p>}
         </div>
