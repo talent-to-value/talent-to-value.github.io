@@ -1036,7 +1036,7 @@ export default function Home() {
   if (view === 'week-complete') {
     return (
       <main className="week-transition-page week-complete-page">
-        <section className="week-complete-card">
+        <section className="week-complete-card week-one-complete-card">
           <span>WEEK 01 · COMPLETE</span>
           <div className="week-firework" aria-hidden="true">
             <i />
@@ -1054,7 +1054,7 @@ export default function Home() {
             <b />
           </div>
           <h1>恭喜你完成了第一周的任务</h1>
-          <div className="next-week-preview">
+          <div className="next-week-preview second-week-plan">
             <strong>第二周计划</strong>
             <p>这一周我们将回答用户“我为什么信你？”的问题，结束后你将获得：</p>
             <ul>

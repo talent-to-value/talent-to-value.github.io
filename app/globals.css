@@ -2217,6 +2217,10 @@ select:focus-visible {
   white-space: nowrap;
 }
 
+.week-one-complete-card h1 {
+  font-size: clamp(38px, 4vw, 56px);
+}
+
 .week-complete-card p {
   max-width: 620px;
   margin: 24px 0 32px;
@@ -2245,6 +2249,15 @@ select:focus-visible {
   margin: 12px 0 0;
   font-size: 16px;
   line-height: 1.7;
+}
+
+.second-week-plan strong {
+  font-size: 26px;
+}
+
+.week-complete-card .second-week-plan p,
+.second-week-plan li {
+  font-size: 18px;
 }
 
 .next-week-preview ul {
@@ -3335,6 +3348,10 @@ select:focus-visible {
   .week-complete-card h1 {
     font-size: 40px;
     white-space: normal;
+  }
+
+  .week-one-complete-card h1 {
+    font-size: 34px;
   }
 
   .next-week-preview {
