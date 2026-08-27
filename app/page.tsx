@@ -3713,6 +3713,7 @@ function FourthWeekPage({
   onFinish: (status: 'waiting' | 'published', missingIds: string[]) => void;
 }) {
   const getAnswer = (day: number, id: string) => answers[keyFor(day, id)] ?? '';
+  const [copiedField, setCopiedField] = useState('');
   const audience = firstFilled(getAnswer(2, 'selectedAudience'), getAnswer(6, 'statementFit'));
   const earlierProblems = uniqueLines(getAnswer(3, 'topProblems'));
   const earlierProblem = firstFilled(
@@ -3751,6 +3752,23 @@ function FourthWeekPage({
       title: work.title,
       proof: work.proof,
     })));
+  const privateTestMessage = [
+    '你好，我最近整理了一项小服务。',
+    chosenOffer ? `它叫“${chosenOffer}”` : '',
+    fitAudience ? `，主要适合${fitAudience}` : '',
+    offerProblem ? `，解决“${offerProblem}”的问题。` : '。',
+    '我想请你从真实购买者的角度看一下：你是否看得懂会得到什么？如果暂时不会购买，最犹豫或最看不懂的地方是什么？不用客气，直接说真实感受就可以。',
+  ].join('');
+  const copyText = async (value: string, field: string) => {
+    if (!value.trim()) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      window.setTimeout(() => setCopiedField((current) => current === field ? '' : current), 1800);
+    } catch {
+      setCopiedField('copy-error');
+    }
+  };
 
   const submit = (missingIds: string[]) => onSubmit(missingIds);
 
@@ -3950,10 +3968,10 @@ function FourthWeekPage({
           <input className="full-width-input" type="text" value={startAction} placeholder="例如：私信我“诊断”，我会先确认这项服务是否适合你" onChange={(event) => onAnswer('startAction', event.target.value)} />
         </div></section>
         <section className="single-task-block purchase-page-builder"><span className="task-number">03</span><div>
-          <h2>生成你的第一版购买入口</h2>
-          <p>工具会把第 22–27 关的答案拼在一起。生成后可以直接编辑，不通顺也没关系。</p>
-          <button className="main-button centered-action" type="button" onClick={generatePurchasePage}>生成购买入口 <span aria-hidden="true">→</span></button>
-          <div className="purchase-page-editor"><AutoGrowTextarea value={purchasePageDraft} placeholder="点击上方按钮生成购买入口" onChange={(event) => onAnswer('purchasePageDraft', event.target.value)} /><span>{purchasePageDraft.replace(/\s/g, '').length} 字</span></div>
+          <h2>生成一页可以直接发出的购买说明</h2>
+          <p>这页购买说明就是你的第一版购买入口。它不负责收款，但要让客户看懂怎么买、如何联系或报名。</p>
+          <button className="main-button centered-action" type="button" onClick={generatePurchasePage}>生成购买说明 <span aria-hidden="true">→</span></button>
+          <div className="purchase-page-editor"><AutoGrowTextarea value={purchasePageDraft} placeholder="点击上方按钮生成购买说明" onChange={(event) => onAnswer('purchasePageDraft', event.target.value)} /><span>{purchasePageDraft.replace(/\s/g, '').length} 字</span></div>
         </div></section>
         <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
       </div>
@@ -3969,9 +3987,18 @@ function FourthWeekPage({
     return (
       <div className="single-day-form fourth-week-form">
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
-          <h2>先不要大范围发布</h2>
-          <p>把购买入口直接发给最可能需要这个结果的人。先发 1 位也可以，最多记录 5 位；如果暂时没有回复，可以标记“等待反馈”后继续。</p>
-          <details className="worksheet-help"><summary>查看准备发送的购买入口</summary><pre className="purchase-page-preview">{purchasePageDraft || '第 27 关还没有生成购买入口。'}</pre></details>
+          <h2>先私下测试，不要公开发布</h2>
+          <p>第 28 关只发给少量最可能需要的人；第 30 关才会把它放进主页、置顶内容等公开位置。先发 1 位也可以，最多记录 5 位。</p>
+          <details className="worksheet-help"><summary>查看准备发送的购买说明</summary><pre className="purchase-page-preview">{purchasePageDraft || '第 27 关还没有生成购买说明。'}</pre></details>
+          <div className="purchase-share-actions">
+            <button className="secondary-button" type="button" disabled={!purchasePageDraft.trim()} onClick={() => copyText(purchasePageDraft, 'purchase-page')}>
+              {copiedField === 'purchase-page' ? '✓ 已复制购买说明' : '复制购买说明'}
+            </button>
+            <button className="secondary-button" type="button" onClick={() => copyText(privateTestMessage, 'private-message')}>
+              {copiedField === 'private-message' ? '✓ 已复制私信开场白' : '复制私信开场白'}
+            </button>
+          </div>
+          {copiedField === 'copy-error' && <p className="copy-message">复制失败，请展开内容后手动复制。</p>}
         </div></section>
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>记录真实反应</h2>
@@ -3993,11 +4020,25 @@ function FourthWeekPage({
 
   if (dayNumber === 29) {
     const records = parseBuyerTestRecords(getAnswer(28, 'purchaseResults'));
-    const signalOptions = ['不知道会拿到什么', '不知道自己是否适合', '证据还不够', '不知道怎么开始', '误解了服务边界', '觉得有启发但不愿付费'];
+    const noFeedbackSignal = '暂时没有足够反馈';
+    const signalOptions = ['不知道会拿到什么', '不知道自己是否适合', '证据还不够', '不知道怎么开始', '误解了服务边界', '觉得有启发但不愿付费', noFeedbackSignal];
     const selectedSignals = uniqueLines(getAnswer(29, 'repeatedSignals'));
-    const toggleSignal = (signal: string) => onAnswer('repeatedSignals', selectedSignals.includes(signal) ? selectedSignals.filter((item) => item !== signal).join('\n') : [...selectedSignals, signal].join('\n'));
+    const toggleSignal = (signal: string) => {
+      if (selectedSignals.includes(signal)) {
+        onAnswer('repeatedSignals', selectedSignals.filter((item) => item !== signal).join('\n'));
+        return;
+      }
+      onAnswer('repeatedSignals', signal === noFeedbackSignal
+        ? noFeedbackSignal
+        : [...selectedSignals.filter((item) => item !== noFeedbackSignal), signal].join('\n'));
+    };
+    const waitingForFeedback = selectedSignals.includes(noFeedbackSignal);
     const finalPage = purchasePageFinal;
-    const missing = [selectedSignals.length ? '' : 'repeatedSignals', getAnswer(29, 'offerRevision').trim() ? '' : 'offerRevision', finalPage.trim() ? '' : 'purchasePageFinal'].filter(Boolean);
+    const missing = [
+      selectedSignals.length ? '' : 'repeatedSignals',
+      waitingForFeedback || getAnswer(29, 'offerRevision').trim() ? '' : 'offerRevision',
+      finalPage.trim() ? '' : 'purchasePageFinal',
+    ].filter(Boolean);
     return (
       <div className="single-day-form fourth-week-form">
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
@@ -4008,10 +4049,11 @@ function FourthWeekPage({
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>哪些问题重复出现了？</h2>
           <div className="revision-signal-grid">{signalOptions.map((signal) => <button className={selectedSignals.includes(signal) ? 'is-selected' : ''} type="button" key={signal} onClick={() => toggleSignal(signal)}>{signal}</button>)}</div>
-          <AutoGrowTextarea value={getAnswer(29, 'offerRevision')} placeholder="根据重复反馈，这一次具体准备改什么？" onChange={(event) => onAnswer('offerRevision', event.target.value)} />
+          {!waitingForFeedback && <AutoGrowTextarea value={getAnswer(29, 'offerRevision')} placeholder="根据重复反馈，这一次具体准备改什么？" onChange={(event) => onAnswer('offerRevision', event.target.value)} />}
+          {waitingForFeedback && <p className="waiting-feedback-note">可以先保存现有购买说明，等收到更多真实反馈后再回来修改。</p>}
         </div></section>
         <section className="single-task-block"><span className="task-number">03</span><div>
-          <h2>修改并保存最终购买页</h2>
+          <h2>修改并保存最终购买说明</h2>
           <div className="purchase-page-editor"><AutoGrowTextarea value={finalPage} placeholder="第 27 关的购买入口会自动带到这里" onChange={(event) => onAnswer('purchasePageFinal', event.target.value)} /><span>{finalPage.replace(/\s/g, '').length} 字</span></div>
         </div></section>
         <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
@@ -4044,9 +4086,9 @@ function FourthWeekPage({
   return (
     <div className="single-day-form fourth-week-form">
       <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
-        <h2>你的第一版已经可以被看见、理解和购买</h2>
-        <p>这不是最终版。先把它放到一个真实入口，观察有没有人带着具体问题来找你。</p>
-        <details className="worksheet-help"><summary>查看最终购买页</summary><pre className="purchase-page-preview">{finalPurchasePage || '前面还没有保存购买页。'}</pre></details>
+        <h2>现在正式公开你的第一版</h2>
+        <p>第 28 关是私下发给少量对象测试；这一关才是把购买说明放到公开入口，观察有没有人带着具体问题来找你。</p>
+        <details className="worksheet-help"><summary>查看最终购买说明</summary><pre className="purchase-page-preview">{finalPurchasePage || '前面还没有保存购买说明。'}</pre></details>
       </div></section>
       <section className="single-task-block"><span className="task-number">02</span><div>
         <h2>准备放在哪里</h2>
@@ -4057,13 +4099,16 @@ function FourthWeekPage({
         <p className="compact-note">不要只说“终于上线了一个新产品”。直接写清楚它帮谁、解决什么，以及怎么开始。</p>
         <AutoGrowTextarea value={launchCopy} placeholder="说明帮谁、解决什么、怎么开始" onChange={(event) => onAnswer('launchCopy', event.target.value)} />
       </div></section>
-      <section className="single-task-block"><span className="task-number">04</span><div>
-        <h2>发布后的真实反应</h2>
-        <AutoGrowTextarea value={getAnswer(30, 'marketResult')} placeholder="有人咨询、购买或拒绝了吗？也可以发布后再回来补充。" onChange={(event) => onAnswer('marketResult', event.target.value)} />
-      </div></section>
+      <details className="market-result-details">
+        <summary>发布后回来记录真实反应（可稍后填写）</summary>
+        <div>
+          <p>有人咨询、购买或拒绝了吗？这些结果不影响你先完成本轮。</p>
+          <AutoGrowTextarea value={getAnswer(30, 'marketResult')} placeholder="记录咨询、购买、拒绝或暂时没有反应" onChange={(event) => onAnswer('marketResult', event.target.value)} />
+        </div>
+      </details>
       {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => onSubmit([])}>{`返回第 ${firstIncomplete} 关`}</button></div> : <div className="single-day-submit feedback-submit-actions">
-        <button className="secondary-button" type="button" onClick={() => finish('waiting')}>先保存发布稿，稍后发布</button>
-        <button className="main-button" type="button" onClick={() => finish('published')}>已经发布，完成 30 关 →</button>
+        <button className="secondary-button" type="button" onClick={() => finish('waiting')}>先保存，稍后公开发布</button>
+        <button className="main-button" type="button" onClick={() => finish('published')}>我已经公开发布，完成 30 关 →</button>
       </div>}
     </div>
   );
