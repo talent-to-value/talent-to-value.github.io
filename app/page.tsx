@@ -3774,11 +3774,6 @@ function FourthWeekPage({
               <span>你目前想服务的人</span><strong>{audience || '前面还没有确定客户'}</strong>
               <span>他们最想解决的问题</span><strong>{earlierProblem || '前面还没有确定问题'}</strong>
             </div>
-            <details className="worksheet-help"><summary>示例</summary><ul>
-              <li>陪一个完全不会拍摄的人完成第一条视频</li>
-              <li>帮一个有目标但总拖延的人整理一周执行计划</li>
-              <li>帮一个经历很多却说不清优势的人重写服务介绍</li>
-            </ul></details>
           </div>
         </section>
 
@@ -3786,6 +3781,11 @@ function FourthWeekPage({
           <span className="task-number">02</span>
           <div>
             <h2>写下 1–3 个现在可以卖的小结果</h2>
+            <details className="worksheet-help"><summary>示例</summary><ul>
+              <li>陪一个完全不会拍摄的人完成第一条视频</li>
+              <li>帮一个有目标但总拖延的人整理一周执行计划</li>
+              <li>帮一个经历很多却说不清优势的人重写服务介绍</li>
+            </ul></details>
             <LineListEditor
               value={getAnswer(22, 'offerCandidates')}
               minRows={2}
@@ -3826,14 +3826,15 @@ function FourthWeekPage({
           <h2>先让客户判断：这是不是为我准备的？</h2>
           <p>“适合谁”帮助对的人认出自己；“不适合谁”减少错配，让后面的交付更稳定。</p>
           <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
-          <details className="worksheet-help"><summary>示例</summary><p><b>适合：</b>已经有专业能力，但介绍自己和服务时总是很散的人。</p><p><b>不适合：</b>只想快速涨粉、追热点，或者希望别人长期代运营的人。</p></details>
         </div></section>
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>写清楚适合谁</h2>
+          <details className="worksheet-help"><summary>示例</summary><p>已经有专业能力，但介绍自己和服务时总是很散的人。</p></details>
           <AutoGrowTextarea value={getAnswer(23, 'fitAudience')} placeholder={audience ? `适合：${audience}` : '适合：正处在什么情况、想解决什么问题的人'} onChange={(event) => onAnswer('fitAudience', event.target.value)} />
         </div></section>
         <section className="single-task-block"><span className="task-number">03</span><div>
           <h2>写清楚不适合谁</h2>
+          <details className="worksheet-help"><summary>示例</summary><p>只想快速涨粉、追热点，或者希望别人长期代运营的人。</p></details>
           <AutoGrowTextarea value={notFitAudience} placeholder="不适合：期待什么结果、需要什么服务方式的人" onChange={(event) => onAnswer('notFitAudience', event.target.value)} />
         </div></section>
         <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
@@ -3844,21 +3845,21 @@ function FourthWeekPage({
   if (dayNumber === 24) {
     const missing = [offerProblem.trim() ? '' : 'offerProblem', uniqueLines(deliverables).length ? '' : 'deliverables'].filter(Boolean);
     return (
-      <div className="single-day-form fourth-week-form">
-        <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
+      <div className="single-day-form fourth-week-form day-twenty-four-form">
+        <section className="day-twenty-four-intro">
           <h2>客户不是购买一个服务名，而是购买一个具体结果</h2>
           <p>这一页只回答两件事：你重点解决什么问题，结束后客户手里会多出哪些可以清点的东西。</p>
           <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
-        </div></section>
-        <section className="single-task-block"><span className="task-number">02</span><div>
+        </section>
+        <section className="day-twenty-four-field">
           <h2>重点解决什么问题</h2>
           <AutoGrowTextarea value={offerProblem} placeholder={earlierProblem || '例如：别人看完介绍，仍然不知道什么时候该找你'} onChange={(event) => onAnswer('offerProblem', event.target.value)} />
-        </div></section>
-        <section className="single-task-block"><span className="task-number">03</span><div>
+        </section>
+        <section className="day-twenty-four-field">
           <h2>客户结束后会拿到什么</h2>
           <p className="compact-note">写具体的文档、页面、修改稿、清单或已经完成的动作，不写“策略建议”这类宽词。</p>
           <LineListEditor value={deliverables} minRows={3} placeholder="例如：一版可以直接使用的服务介绍" addLabel="新增一个交付物" onChange={(value) => onAnswer('deliverables', value)} />
-        </div></section>
+        </section>
         <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
       </div>
     );

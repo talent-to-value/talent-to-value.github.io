@@ -1635,6 +1635,43 @@ select:focus-visible {
   min-width: 0;
 }
 
+.day-twenty-four-form {
+  gap: 22px;
+}
+
+.day-twenty-four-intro h2,
+.day-twenty-four-field h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.day-twenty-four-intro > p {
+  margin: 12px 0 0;
+  padding: 14px 18px;
+  border-left: 5px solid var(--pink);
+  background: rgba(231, 155, 179, 0.28);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.day-twenty-four-field {
+  padding: 24px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.day-twenty-four-field:nth-of-type(3) {
+  background: var(--paper-light);
+}
+
+.day-content .day-twenty-four-field textarea {
+  margin-top: 16px;
+  min-height: 110px;
+}
+
 .compact-note {
   margin: 12px 0 0;
   color: var(--muted);
