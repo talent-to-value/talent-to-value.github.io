@@ -64,6 +64,22 @@ type RepresentativeWork = {
   proof: string;
 };
 
+type ContentWritingSection = {
+  id: string;
+  label: string;
+  placeholder: string;
+};
+
+type ContentWritingConfig = {
+  name: string;
+  purpose: string;
+  formula: string;
+  titleId: string;
+  titlePlaceholder: string;
+  examples: string[];
+  sections: ContentWritingSection[];
+};
+
 type FlowStep =
   | { kind: 'prompt'; prompt: Prompt }
   | { kind: 'clarity' }
@@ -78,6 +94,101 @@ const clarityQuestions = [
   { id: 'clarityProblem', label: '别人能看出你可以解决什么问题吗？' },
   { id: 'clarityTiming', label: '别人知道什么时候可以来找你吗？' },
 ];
+
+const contentWritingConfigs: Record<number, ContentWritingConfig> = {
+  15: {
+    name: '问题型内容',
+    purpose: '让读者认出自己',
+    formula: '你不是____，你是____。',
+    titleId: 'problemTitle',
+    titlePlaceholder: '例如：你不是缺流量，你是还没有说清楚别人为什么该找你',
+    examples: [
+      '你不是没有才华，别人只是还看不懂你能解决什么问题。',
+      '你不是缺流量，你是还没有说清楚别人为什么该找你。',
+      '你不是不会写，你是还没有找到一个具体问题开始。',
+    ],
+    sections: [
+      { id: 'problemBelief', label: '第一段：写读者以为的问题', placeholder: '读者现在以为，自己卡住是因为什么？' },
+      { id: 'problemTruth', label: '第二段：写真正的问题', placeholder: '你认为他真正卡住的地方是什么？' },
+      { id: 'problemReason', label: '第三段：写你为什么这样判断', placeholder: '结合你的经历、观察或证据，说明判断依据。' },
+      { id: 'problemAction', label: '第四段：写他现在先做什么', placeholder: '给读者一个现在就能开始的具体动作。' },
+    ],
+  },
+  16: {
+    name: '判断型内容',
+    purpose: '让别人看见你怎么取舍',
+    formula: '别先____，先____。',
+    titleId: 'judgmentTitle',
+    titlePlaceholder: '例如：别先追热点，先写清楚你帮谁',
+    examples: [
+      '别先追热点，先写清楚你帮谁。',
+      '别先做完整课程，先验证别人愿不愿意为一个小结果付费。',
+      '别先发更多内容，先看看别人为什么没有继续问。',
+    ],
+    sections: [
+      { id: 'judgmentCommon', label: '第一段：写大多数人会怎么做', placeholder: '面对这个问题时，大多数人通常会先做什么？' },
+      { id: 'judgmentProblem', label: '第二段：写这样做的问题是什么', placeholder: '这种做法为什么容易让人继续卡住？' },
+      { id: 'judgmentAdvice', label: '第三段：写你现在更建议怎么做', placeholder: '你建议把顺序改成什么？为什么？' },
+      { id: 'judgmentAction', label: '第四段：给一个具体动作', placeholder: '给读者一个今天就能完成的动作。' },
+    ],
+  },
+  17: {
+    name: '故事型内容',
+    purpose: '让别人知道你的判断从哪里来',
+    formula: '我以前____，后来我发现____，所以我现在____。',
+    titleId: 'storyTitle',
+    titlePlaceholder: '例如：我为什么不再先追热点',
+    examples: [
+      '我以前以为写不出来是没有灵感，后来我发现真正的问题是没有明确的问题和素材，所以我现在会先确定问题，再开始写。',
+      '我以前总想等准备充分再做产品，后来我发现真实反馈只能来自一个能使用的版本，所以我现在会先做最小版本。',
+      '我以前以为客户嫌贵是价格问题，后来我发现是结果没有说清楚，所以我现在会先解释客户最终能得到什么。',
+    ],
+    sections: [
+      { id: 'storyBefore', label: '第一段：写“我以前……”', placeholder: '你以前相信什么，或者习惯怎么做？' },
+      { id: 'storyDiscovery', label: '第二段：写“后来我发现……”', placeholder: '哪件具体经历让你改变了看法？' },
+      { id: 'storyNow', label: '第三段：写“所以我现在……”', placeholder: '你现在形成了什么判断，又会怎么行动？' },
+    ],
+  },
+  18: {
+    name: '证据型内容',
+    purpose: '让别人相信你不是只会说',
+    formula: '我做过____；它解决了____；它让我形成了____；这个判断对你意味着____。',
+    titleId: 'evidenceTitle',
+    titlePlaceholder: '例如：做完这份工作清单后，我更确定流程比提醒有用',
+    examples: [
+      '我整理过一份新人工作清单，它解决了重复询问的问题，也让我更确定：好的流程应该让人能够自己往下走。',
+      '我连续写过 100 篇文章，它让我发现稳定表达不是等待灵感，而是不断回答真实问题。',
+      '我帮朋友改过多份简历，这让我发现很多人不是没有经历，而是没有把经历和岗位需要连接起来。',
+    ],
+    sections: [
+      { id: 'contentEvidenceDid', label: '第一段：写我做过什么', placeholder: '选择一个作品、过程、结果或反馈，写清你做过什么。' },
+      { id: 'contentEvidenceSolved', label: '第二段：写它解决了什么问题', placeholder: '这件事具体解决了谁的什么问题？' },
+      { id: 'contentEvidenceJudgment', label: '第三段：写它让我形成了什么判断', placeholder: '做完之后，你更确定了什么？' },
+      { id: 'contentEvidenceUse', label: '第四段：写这个判断对读者有什么用', placeholder: '这个判断能帮助读者避免什么，或者先做什么？' },
+    ],
+  },
+  19: {
+    name: '产品入口型内容',
+    purpose: '让读者知道怎么买你',
+    formula: '如果你是____，现在卡在____，我可以帮你____。',
+    titleId: 'offerTitle',
+    titlePlaceholder: '例如：如果你的服务很好，但客户还是看不懂你具体做什么',
+    examples: [
+      '如果你想开始做自媒体，却一直不知道第一条视频拍什么，我可以陪你完成选题、脚本和第一次拍摄。',
+      '如果你做过很多项目，却说不清自己的优势，我可以帮你整理出一份清楚的服务说明。',
+      '如果你总有目标却执行不下去，我可以帮你把目标拆成一周可以完成的具体安排。',
+    ],
+    sections: [
+      { id: 'offerFit', label: '第一段：写谁适合', placeholder: '这项服务适合什么样的人？' },
+      { id: 'offerProblem', label: '第二段：写他现在卡在哪里', placeholder: '他现在正在遇到什么具体问题？' },
+      { id: 'offerCost', label: '第三段：写这件事不解决会继续发生什么', placeholder: '如果不处理，这个问题会怎样反复出现？' },
+      { id: 'offerHelp', label: '第四段：写我能帮你完成哪一步', placeholder: '你能把他从哪里推进到哪里？' },
+      { id: 'offerDeliverable', label: '第五段：写具体交付什么', placeholder: '结束后，对方手里会具体得到什么？' },
+      { id: 'offerNotFit', label: '第六段：写不适合谁', placeholder: '哪些情况不适合这项服务？' },
+      { id: 'offerStart', label: '第七段：写怎么开始', placeholder: '读者下一步应该联系你、填写表单，还是购买？' },
+    ],
+  },
+};
 
 function uniqueLines(value: string) {
   return Array.from(
@@ -716,7 +827,9 @@ export default function Home() {
                         ? 12
                         : currentDay === 13 && ['representativeWorks', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
                           ? 15
-                        : null;
+                          : currentDay >= 15 && currentDay <= 19 && previousValue !== value
+                            ? currentDay + 1
+                            : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -1036,7 +1149,7 @@ export default function Home() {
   if (view === 'week-complete') {
     return (
       <main className="week-transition-page week-complete-page">
-        <section className="week-complete-card week-one-complete-card">
+        <section className="week-complete-card">
           <span>WEEK 01 · COMPLETE</span>
           <div className="week-firework" aria-hidden="true">
             <i />
@@ -1054,7 +1167,7 @@ export default function Home() {
             <b />
           </div>
           <h1>恭喜你完成了第一周的任务</h1>
-          <div className="next-week-preview second-week-plan">
+          <div className="next-week-preview">
             <strong>第二周计划</strong>
             <p>这一周我们将回答用户“我为什么信你？”的问题，结束后你将获得：</p>
             <ul>
@@ -1152,7 +1265,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -1257,6 +1370,13 @@ export default function Home() {
               <DayFourteenMergedPage
                 onBack={() => navigateToDay(13)}
                 onContinue={finishMergedDayFourteen}
+              />
+            ) : currentDay >= 15 && currentDay <= 19 ? (
+              <ThirdWeekWritingPage
+                dayNumber={currentDay}
+                answers={answers}
+                onAnswer={setAnswer}
+                onSubmit={(missingIds) => finishCurrentDay(missingIds)}
               />
             ) : (
               <DayWorksheet
@@ -2806,6 +2926,84 @@ function DayFourteenMergedPage({
       <div>
         <button className="secondary-button" type="button" onClick={onBack}>查看第 13 关</button>
         <button className="main-button" type="button" onClick={onContinue}>进入第 15 关 →</button>
+      </div>
+    </div>
+  );
+}
+
+function ThirdWeekWritingPage({
+  dayNumber,
+  answers,
+  onAnswer,
+  onSubmit,
+}: {
+  dayNumber: number;
+  answers: AnswerMap;
+  onAnswer: (id: string, value: string) => void;
+  onSubmit: (missingIds: string[]) => void;
+}) {
+  const config = contentWritingConfigs[dayNumber];
+  const title = answers[keyFor(dayNumber, config.titleId)] ?? '';
+  const missingIds = [
+    title.trim() ? '' : config.titleId,
+    ...config.sections.map((section) => (
+      answers[keyFor(dayNumber, section.id)]?.trim() ? '' : section.id
+    )),
+  ].filter(Boolean);
+
+  return (
+    <div className="single-day-form third-week-writing-form">
+      <section className="single-task-block content-writing-guide">
+        <span className="task-number">01</span>
+        <div>
+          <div className="content-writing-heading">
+            <h2>“{config.name}”</h2>
+            <strong>—— {config.purpose}</strong>
+          </div>
+          <div className="content-title-formula">
+            <span>句式是：</span>
+            <strong>{config.formula}</strong>
+          </div>
+          <ul className="content-title-examples">
+            {config.examples.map((example, index) => (
+              <li key={example}><span>示例 {index + 1}</span>{example}</li>
+            ))}
+          </ul>
+          <label className="content-title-input">
+            <span>写下你的标题</span>
+            <input
+              type="text"
+              value={title}
+              placeholder={config.titlePlaceholder}
+              onChange={(event) => onAnswer(config.titleId, event.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="single-task-block content-draft-section">
+        <span className="task-number">02</span>
+        <div>
+          <h2>开始写正文</h2>
+          <div className="content-paragraph-list">
+            {config.sections.map((section) => (
+              <label key={section.id}>
+                <span>{section.label}</span>
+                <AutoGrowTextarea
+                  value={answers[keyFor(dayNumber, section.id)] ?? ''}
+                  placeholder={section.placeholder}
+                  onChange={(event) => onAnswer(section.id, event.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
+          保存，进入第 {dayNumber + 1} 关 →
+        </button>
       </div>
     </div>
   );
