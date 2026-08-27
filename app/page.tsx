@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
 
-type View = 'intro' | 'overview' | 'day' | 'week-checklist' | 'week-complete' | 'week-two-checklist' | 'week-two-complete';
+type View =
+  | 'intro'
+  | 'overview'
+  | 'day'
+  | 'week-checklist'
+  | 'week-complete'
+  | 'week-two-checklist'
+  | 'week-two-complete'
+  | 'week-three-checklist'
+  | 'week-three-complete';
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
@@ -663,6 +672,45 @@ function WeekTwoChecklistPage({
   );
 }
 
+function WeekThreeChecklistPage({
+  items,
+  onContinue,
+}: {
+  items: WeekTwoChecklistItem[];
+  onContinue: () => void;
+}) {
+  return (
+    <main className="week-transition-page week-checklist-page">
+      <section className="week-checklist-card week-two-checklist-card">
+        <header className="week-checklist-heading">
+          <span>WEEK 03 · CHECKLIST</span>
+          <h1>第三周结束，请检查你已经写好的内容：</h1>
+          <p>这 5 篇内容会成为你发布测试、建立连接和制作购买入口的素材。</p>
+        </header>
+        <div className="week-checklist-list week-two-checklist-list">
+          {items.map((item, index) => (
+            <article className={item.value.trim() ? 'is-ready' : 'is-missing'} key={item.label}>
+              <div className="week-checklist-label">
+                <span>0{index + 1}</span>
+                <div>
+                  <h2>{item.label}：</h2>
+                  <small>{item.value.trim() ? 'READY' : '待补充'}</small>
+                </div>
+              </div>
+              <p>{item.value || '这一项目前还没有内容，可以之后回到对应关卡补充。'}</p>
+            </article>
+          ))}
+        </div>
+        <footer className="week-checklist-actions">
+          <button className="main-button" type="button" onClick={onContinue}>
+            确认，查看第三周成果 <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </section>
+    </main>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
@@ -746,6 +794,18 @@ export default function Home() {
       value: answers[keyFor(13, 'trustPage')] ?? '',
     },
   ];
+  const weekThreeChecklist: WeekTwoChecklistItem[] = Object.entries(contentWritingConfigs).map(([day, config]) => {
+    const dayNumber = Number(day);
+    const finalArticle = answers[keyFor(20, `finalArticle${dayNumber}`)];
+    const mergedDraft = [
+      answers[keyFor(dayNumber, config.titleId)]?.trim() ?? '',
+      ...config.sections.map((section) => answers[keyFor(dayNumber, section.id)]?.trim() ?? ''),
+    ].filter(Boolean).join('\n\n');
+    return {
+      label: `一篇${config.name}`,
+      value: finalArticle === undefined ? mergedDraft : finalArticle,
+    };
+  });
 
   /* eslint-disable react-hooks/set-state-in-effect -- restoring device-local progress is intentional */
   useEffect(() => {
@@ -807,6 +867,23 @@ export default function Home() {
     setPreviewMode(isFuturePreview);
     setLevelsOpen(false);
     setView('day');
+    window.scrollTo({ top: 0 });
+  };
+
+  const navigateToStage = (stageId: number) => {
+    setLevelsOpen(false);
+    setPreviewMode(false);
+    if (stageId === 1) {
+      navigateToDay(1);
+      return;
+    }
+    setView(
+      stageId === 2
+        ? 'week-checklist'
+        : stageId === 3
+          ? 'week-two-checklist'
+          : 'week-three-checklist',
+    );
     window.scrollTo({ top: 0 });
   };
 
@@ -1004,6 +1081,21 @@ export default function Home() {
     setCurrentDay(15);
     setPreviewMode(false);
     setView('week-two-checklist');
+    window.scrollTo({ top: 0 });
+  };
+
+  const finishThirdWeek = () => {
+    setCompleted((previous) => ({ ...previous, '21': true }));
+    setDeferred((previous) => {
+      const next = { ...previous };
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith('21:')) delete next[key];
+      });
+      return next;
+    });
+    setCurrentDay(22);
+    setPreviewMode(false);
+    setView('week-three-checklist');
     window.scrollTo({ top: 0 });
   };
 
@@ -1237,6 +1329,55 @@ export default function Home() {
     );
   }
 
+  if (view === 'week-three-checklist') {
+    return (
+      <WeekThreeChecklistPage
+        items={weekThreeChecklist}
+        onContinue={() => setView('week-three-complete')}
+      />
+    );
+  }
+
+  if (view === 'week-three-complete') {
+    return (
+      <main className="week-transition-page week-complete-page">
+        <section className="week-complete-card">
+          <span>WEEK 03 · COMPLETE</span>
+          <div className="week-firework" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <b />
+          </div>
+          <h1>恭喜你完成了第三周的任务</h1>
+          <div className="next-week-preview">
+            <strong>第四周计划</strong>
+            <p>这一周我们将回答用户“现在怎么买，买完能得到什么？”的问题，结束后你将获得：</p>
+            <ul>
+              <li>一个现在就能够交付的最小产品</li>
+              <li>清楚的适合对象与服务边界</li>
+              <li>具体的交付方式、流程和价格</li>
+              <li>一页可以直接发出去的购买入口</li>
+              <li>一轮真实购买测试与修改</li>
+            </ul>
+          </div>
+          <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(22)}>
+            进入第四周 <span aria-hidden="true">→</span>
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="mvp-day">
       <DaySidebar
@@ -1246,6 +1387,7 @@ export default function Home() {
         deferred={deferred}
         firstIncomplete={firstIncomplete}
         onHome={() => setView('intro')}
+        onSelectStage={navigateToStage}
         onSelect={navigateToDay}
       />
 
@@ -1273,7 +1415,7 @@ export default function Home() {
               <div className="day-orientation-copy day-orientation-copy-single">
                 <p>{activeDay.principle}</p>
               </div>
-            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(currentDay) && (
+            ) : ![1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(currentDay) && (
               <div className="day-orientation-copy">
                 <p>{shortReason(activeDay)}</p>
                 <strong>完成后：{activeDay.output}</strong>
@@ -1292,6 +1434,14 @@ export default function Home() {
                 onSubmit={(missingIds) => {
                   if (previewMode) navigateToDay(firstIncomplete);
                   else finishCurrentDay(missingIds);
+                }}
+              />
+            ) : currentDay === 21 ? (
+              <DayTwentyOnePublishPage
+                buttonLabel={previewMode ? `返回第 ${firstIncomplete} 关` : '完成发布与调整，查看第三周总结 →'}
+                onSubmit={() => {
+                  if (previewMode) navigateToDay(firstIncomplete);
+                  else finishThirdWeek();
                 }}
               />
             ) : previewMode ? (
@@ -3202,6 +3352,40 @@ ${articles}`;
   );
 }
 
+function DayTwentyOnePublishPage({
+  buttonLabel,
+  onSubmit,
+}: {
+  buttonLabel: string;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="single-day-form day-twenty-one-form">
+      <div className="day-twenty-one-intro">
+        在这里你可以任选 2 到 3 篇去分享在公开的网络里，同时记录具体的问题、私信、转介绍和购买意向，有任何反馈你都可以记录下来。
+      </div>
+
+      <details className="day-twenty-one-feedback">
+        <summary>记录什么样的反馈</summary>
+        <ul>
+          <li><strong>读者认出了自己：</strong>“这说的就是我，我一直以为自己只是缺流量。”</li>
+          <li><strong>读者提出具体问题：</strong>“如果我已经有服务，但介绍还是很散，应该先改哪里？”</li>
+          <li><strong>读者私信或转介绍：</strong>“我把这篇转给了一个正准备做咨询的朋友。”</li>
+          <li><strong>读者表达购买意向：</strong>“你现在能不能帮我一起整理？怎么收费？”</li>
+        </ul>
+      </details>
+
+      <p className="day-twenty-one-followup">可以根据一些反馈来进行修改优化。</p>
+
+      <div className="single-day-submit submit-only">
+        <button className="main-button" type="button" onClick={onSubmit}>
+          {buttonLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DayWorksheet({
   day,
   flow,
@@ -3409,6 +3593,7 @@ function DaySidebar({
   deferred,
   firstIncomplete,
   onHome,
+  onSelectStage,
   onSelect,
 }: {
   currentDay: number;
@@ -3417,6 +3602,7 @@ function DaySidebar({
   deferred: BooleanMap;
   firstIncomplete: number;
   onHome: () => void;
+  onSelectStage: (stage: number) => void;
   onSelect: (day: number) => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
@@ -3437,7 +3623,10 @@ function DaySidebar({
       <nav ref={navRef}>
         {stages.map((stage) => (
           <section className="sidebar-stage" key={stage.id}>
-            <h2><span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>{stage.id === 3 ? '与用户产生连接' : stage.shortName}</h2>
+            <button className="sidebar-stage-heading" type="button" onClick={() => onSelectStage(stage.id)}>
+              <span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>
+              <strong>{stage.id === 3 ? '与用户产生连接' : stage.shortName}</strong>
+            </button>
             {days.filter((day) => day.stage === stage.id).map((day) => {
               const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
               return (
