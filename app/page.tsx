@@ -733,7 +733,22 @@ export default function Home() {
       <main className="week-transition-page week-complete-page">
         <section className="week-complete-card">
           <span>WEEK 01 · COMPLETE</span>
-          <h1>恭喜你完成了第一周的任务 🎆</h1>
+          <div className="week-firework" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <b />
+          </div>
+          <h1>恭喜你完成了第一周的任务</h1>
           <p>你已经收获了一份可用的服务说明。接下来，我们进入第二周。</p>
           <button className="main-button" type="button" onClick={() => navigateToDay(8)}>
             进入第二周 <span aria-hidden="true">→</span>
