@@ -196,6 +196,64 @@ select:focus-visible {
   font-weight: 750;
 }
 
+.home-shell {
+  background: var(--ink);
+}
+
+.home-shell .editorial-home {
+  border-color: var(--paper-light);
+  background: var(--pink);
+  box-shadow: 10px 10px 0 rgba(255, 250, 240, 0.9);
+}
+
+.home-shell .home-hero {
+  min-height: calc(100dvh - 173px);
+}
+
+.home-shell .home-hero-copy {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 4vw, 54px) 0;
+}
+
+.home-shell .home-eyebrow {
+  margin-top: auto;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.home-shell .home-hero-copy > p {
+  color: var(--ink);
+}
+
+.home-shell .home-hero-copy .main-button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.home-shell .home-question-card {
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+  color: var(--ink);
+}
+
+.home-shell .home-question-card .home-card-label {
+  color: var(--ink);
+}
+
+.home-shell .pain-list {
+  border-top-color: rgba(36, 69, 44, 0.4);
+}
+
+.home-shell .pain-list li {
+  border-bottom-color: rgba(36, 69, 44, 0.25);
+}
+
+.home-shell .pain-list li::before {
+  color: var(--pink);
+}
+
 .main-button {
   min-height: 52px;
   padding: 0 28px;
@@ -241,10 +299,7 @@ select:focus-visible {
 
 .overview-heading {
   padding: 54px 0 38px;
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: 64px;
-  align-items: end;
+  display: block;
 }
 
 .overview-copy {
@@ -282,7 +337,7 @@ select:focus-visible {
 }
 
 .stage-card-3 {
-  background: #f8d9a5;
+  background: var(--paper-light);
 }
 
 .stage-card-top {
@@ -328,6 +383,14 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 32px;
+}
+
+.overview-actions-only {
+  justify-content: flex-end;
+}
+
+.week-start-card {
+  min-height: 620px;
 }
 
 .overview-actions strong {

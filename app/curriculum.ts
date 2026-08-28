@@ -39,7 +39,7 @@ export const stages: Stage[] = [
     shortName: '一份清晰的服务说明',
     title: '说清你是谁、帮谁、为什么值钱',
     question: '一个陌生人能不能复述你解决什么问题？',
-    output: '一段能被复述的服务介绍',
+    output: '一份经过现实反馈的服务说明',
   },
   {
     id: 2,
@@ -47,15 +47,15 @@ export const stages: Stage[] = [
     shortName: '翻箱子，回答“我为什么信你”',
     title: '整理证据、故事和代表作品',
     question: '别人为什么愿意承担选择你的风险？',
-    output: '一页让人相信你的证据说明',
+    output: '一页“为什么能信我”',
   },
   {
     id: 3,
     range: '15—21',
-    shortName: '持续理解',
+    shortName: '与用户产生连接',
     title: '写出 5 篇说明价值的内容',
     question: '你的内容是否持续指向同一个价值？',
-    output: '五篇让客户认出问题的内容',
+    output: '5 篇能够建立连接的内容',
   },
   {
     id: 4,
@@ -63,7 +63,7 @@ export const stages: Stage[] = [
     shortName: '一页可以购买的入口',
     title: '做出一个可以被购买的入口',
     question: '合适的人看完以后，是否知道怎么买？',
-    output: '一页可以直接购买的服务入口',
+    output: '一个可交付、可定价、可购买的最小产品',
   },
 ];
 

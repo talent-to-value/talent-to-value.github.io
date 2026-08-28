@@ -6,6 +6,7 @@ import { days, stages, type Day, type Prompt } from './curriculum';
 type View =
   | 'intro'
   | 'overview'
+  | 'week-one-start'
   | 'day'
   | 'week-checklist'
   | 'week-complete'
@@ -1180,8 +1181,14 @@ export default function Home() {
   };
 
   const startOrContinue = () => {
-    if (completedCount === 30) setLevelsOpen(true);
-    else navigateToDay(firstIncomplete);
+    if (completedCount === 0) {
+      setView('week-one-start');
+      window.scrollTo({ top: 0 });
+    } else if (completedCount === 30) {
+      navigateToDay(1);
+    } else {
+      navigateToDay(firstIncomplete);
+    }
   };
 
   const finishCurrentDay = (missingIds: string[]) => {
@@ -1357,7 +1364,7 @@ export default function Home() {
               <h1>教你如何把才华变成钱</h1>
               <p>把脑子里模糊的能力，一步步整理成别人看得懂、愿意相信、可以买到的服务或产品。</p>
               <button className="main-button" type="button" onClick={() => setView('overview')}>
-                下一步 <span aria-hidden="true">→</span>
+                开始 <span aria-hidden="true">→</span>
               </button>
             </div>
             <aside className="home-question-card" aria-label="你可能正在面对的问题">
@@ -1369,10 +1376,6 @@ export default function Home() {
               </ul>
             </aside>
           </div>
-          <footer className="home-footer">
-            <span>30 关 · 每次只处理一个问题</span>
-            <span>{completedCount} / 30 已推进</span>
-          </footer>
         </section>
       </main>
     );
@@ -1387,44 +1390,32 @@ export default function Home() {
             <span>THE ROUTE · 04 STAGES</span>
           </header>
           <div className="overview-heading">
-            <div>
-              <span className="home-eyebrow">接下来会发生什么</span>
-              <h1>四步把才华变成钱</h1>
-            </div>
-            <p className="overview-copy">
-              这个工具会通过下面四个步骤来帮你想清楚。现在一共有 30 关，不用担心，时间不会很长，让我们现在开始吧！
-            </p>
+            <h1>四步把才华变成钱</h1>
           </div>
           <div className="stage-card-grid">
             {stages.map((stage) => {
-              const stageDays = days.filter((day) => day.stage === stage.id);
-              const stageCompleted = stageDays.filter((day) => completed[String(day.day)]).length;
+              const weekLabels = ['第一周', '第二周', '第三周', '第四周'];
               return (
                 <article className={`stage-card stage-card-${stage.id}`} key={stage.id}>
                   <div className="stage-card-top">
                     <span>0{stage.id}</span>
-                    <small>DAY {stage.range}</small>
+                    <small>{weekLabels[stage.id - 1]}</small>
                   </div>
                   <h2>{stage.shortName}</h2>
                   <p>{stage.title}</p>
                   <div className="stage-card-output">最后留下：{stage.output}</div>
-                  <span className="stage-card-progress">{stageCompleted} / {stageDays.length} 已推进</span>
                 </article>
               );
             })}
           </div>
-          <div className="overview-actions">
-            <div>
-              <span className="home-card-label">你的下一步</span>
-              <strong>第 {firstIncomplete} 关 · {days[firstIncomplete - 1].title}</strong>
-            </div>
+          <div className="overview-actions overview-actions-only">
             <div className="home-actions">
               <button className="main-button" type="button" onClick={startOrContinue}>
                 {completedCount === 30
-                  ? '查看全部关卡'
+                  ? '进入第一关'
                   : completedCount
                     ? `继续第 ${firstIncomplete} 关`
-                    : '开始第 1 关'}
+                    : '进入第一关'}
               </button>
               <button className="text-button" type="button" onClick={() => setLevelsOpen(true)}>
                 查看全部 30 关
@@ -1441,6 +1432,31 @@ export default function Home() {
           onClose={() => setLevelsOpen(false)}
           onSelect={navigateToDay}
         />
+      </main>
+    );
+  }
+
+  if (view === 'week-one-start') {
+    return (
+      <main className="week-transition-page week-complete-page">
+        <section className="week-complete-card week-start-card">
+          <span>WEEK 01 · START</span>
+          <h1>让我们进入第一周的任务</h1>
+          <div className="next-week-preview">
+            <strong>第一周计划</strong>
+            <p>这一周我们将回答用户“你能帮我解决什么问题？”的问题，结束后你将获得：</p>
+            <ul>
+              <li>一类本轮最想服务的客户</li>
+              <li>1–3 个客户最想解决的问题</li>
+              <li>一句清楚、容易被复述的自我介绍</li>
+              <li>一句“为什么是我”的事实证据</li>
+              <li>一份可以拿去测试的服务说明</li>
+            </ul>
+          </div>
+          <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(1)}>
+            进入第一周 <span aria-hidden="true">→</span>
+          </button>
+        </section>
       </main>
     );
   }
