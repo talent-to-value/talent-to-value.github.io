@@ -2104,23 +2104,13 @@ function DayFourSinglePage({
   onSubmit: (missingIds: string[]) => void;
 }) {
   const audience = answers[keyFor(2, 'selectedAudience')] ?? '';
-  const selectedProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
-  const allProblems = uniqueLines(answers[keyFor(3, 'problemCandidates')] ?? '');
-  const problemOptions = selectedProblems.length ? selectedProblems : allProblems;
-  const storedProblem = answers[keyFor(4, 'focusProblem')] ?? '';
-  const focusProblem = storedProblem || (problemOptions.length === 1 ? problemOptions[0] : '');
-  const outcome = answers[keyFor(4, 'valueOutcome')] ?? '';
   const versions = uniqueLines(answers[keyFor(4, 'valueVersions')] ?? '');
   const removedVersions = uniqueLines(answers[keyFor(4, 'removedValueVersions')] ?? '')
     .filter((version) => versions.includes(version));
   const selectedValue = answers[keyFor(4, 'selectedValue')] ?? '';
   const [editingCandidate, setEditingCandidate] = useState('');
   const [candidateEdit, setCandidateEdit] = useState('');
-  const canGenerate = Boolean(audience.trim() && focusProblem.trim() && outcome.trim());
-  const generatedSentence = canGenerate
-    ? `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${outcome.trim()}。`
-    : '';
-  const draft = answers[keyFor(4, 'generatedDraft')] || generatedSentence || selectedValue;
+  const draft = answers[keyFor(4, 'generatedDraft')] || selectedValue;
   const activeVersions = versions.filter((version) => !removedVersions.includes(version));
   const orderedVersions = [
     ...activeVersions,
@@ -2129,24 +2119,9 @@ function DayFourSinglePage({
   const draftIsRemoved = removedVersions.includes(draft.trim());
   const draftIsActive = versions.includes(draft.trim()) && !draftIsRemoved;
   const missingIds = [
-    !focusProblem.trim() ? 'focusProblem' : '',
     !activeVersions.length ? 'valueVersions' : '',
     !selectedValue.trim() || !versions.includes(selectedValue.trim()) || removedVersions.includes(selectedValue.trim()) ? 'selectedValue' : '',
   ].filter(Boolean);
-
-  const updateProblem = (value: string) => {
-    onAnswer('focusProblem', value);
-    if (audience.trim() && value.trim() && outcome.trim()) {
-      onAnswer('generatedDraft', `我帮助${audience.trim()}解决“${value.trim()}”，让他能够${outcome.trim()}。`);
-    }
-  };
-
-  const updateOutcome = (value: string) => {
-    onAnswer('valueOutcome', value);
-    if (audience.trim() && focusProblem.trim() && value.trim()) {
-      onAnswer('generatedDraft', `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${value.trim()}。`);
-    }
-  };
 
   const addCandidate = () => {
     const sentence = draft.trim();
@@ -2202,44 +2177,17 @@ function DayFourSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>开始造句</h2>
+          <h2>开始造句（建议多写，要很具体的写）</h2>
           <div className="sentence-formula" aria-label="自我介绍句子公式">
             <span>造句公式是：</span>
             <p>我帮助【本轮服务的人】解决【选择的问题】，让他能够【得到的结果】。</p>
-          </div>
-          <div className="value-sentence-inputs">
-            <label>
-              <span>选择他们的问题</span>
-              {problemOptions.length ? (
-                <select
-                  id="day-four-problem"
-                  className="full-select"
-                  value={focusProblem}
-                  onChange={(event) => updateProblem(event.target.value)}
-                >
-                  {problemOptions.length > 1 && <option value="">请选择一个客户卡点</option>}
-                  {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
-                </select>
-              ) : (
-                <span className="empty-inline">第 3 关还没有卡点，请先返回补充。</span>
-              )}
-            </label>
-            <label>
-              <span>让他们得到什么样的结果</span>
-              <input
-                type="text"
-                value={outcome}
-                placeholder="例如：完成并发布第一条视频"
-                onChange={(event) => updateOutcome(event.target.value)}
-              />
-            </label>
           </div>
           <label className="sr-only" htmlFor="day-four-draft">编辑这句自我介绍</label>
           <textarea
             id="day-four-draft"
             className="candidate-draft-textarea"
             value={draft}
-            placeholder="选择问题并填写结果后，这里会自动拼成一句话，你也可以直接编辑。"
+            placeholder="按照上面的公式写一句具体的价值句。"
             onChange={(event) => onAnswer('generatedDraft', event.target.value)}
           />
           <div className="center-action">
@@ -2258,7 +2206,7 @@ function DayFourSinglePage({
       <section className="single-task-block">
         <span className="task-number">03</span>
         <div>
-          <h2>候选池（建议 5–10 句，要很具体）</h2>
+          <h2>候选池</h2>
           <p>先选一版你最想立刻开始的。</p>
           {versions.length ? (
             <div className="introduction-pool">
@@ -2332,29 +2280,29 @@ function DayFiveSinglePage({
   onSubmit: (missingIds: string[]) => void;
 }) {
   const experience = answers[keyFor(5, 'evidenceFacts')] ?? '';
-  const problemOptions = uniqueLines([
-    answers[keyFor(3, 'topProblems')] ?? '',
-    answers[keyFor(3, 'problemCandidates')] ?? '',
-    answers[keyFor(4, 'focusProblem')] ?? '',
-  ].join('\n'));
-  const savedSentence = answers[keyFor(5, 'evidenceSentence')] ?? '';
-  const legacyReason = savedSentence.includes('因为')
-    ? savedSentence.split('因为').slice(1).join('因为').replace(/[。.]$/, '')
-    : '';
-  const evidenceProblem = answers[keyFor(5, 'evidenceProblem')]
-    ?? answers[keyFor(4, 'focusProblem')]
-    ?? (problemOptions.length === 1 ? problemOptions[0] : '');
+  const audience = answers[keyFor(2, 'selectedAudience')] ?? '';
+  const valueLine = answers[keyFor(4, 'selectedValue')]
+    || answers[keyFor(4, 'generatedDraft')]
+    || '';
+  const selectedProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
+  const allProblems = uniqueLines(answers[keyFor(3, 'problemCandidates')] ?? '');
+  const problems = (selectedProblems.length ? selectedProblems : allProblems).slice(0, 3);
+  const savedEvidenceSentence = answers[keyFor(5, 'evidenceSentence')] ?? '';
+  const legacyReason = savedEvidenceSentence.includes('因为')
+    ? savedEvidenceSentence.split('因为').slice(1).join('因为').replace(/[。.]$/, '')
+    : savedEvidenceSentence.replace(/[。.]$/, '');
   const evidenceReason = answers[keyFor(5, 'evidenceReason')] ?? legacyReason;
-  const evidenceSentence = evidenceProblem.trim() && evidenceReason.trim()
-    ? `我可以帮你解决“${evidenceProblem.trim()}”的问题，因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
+  const evidenceSentence = evidenceReason.trim()
+    ? problems[0]
+      ? `我可以帮你解决“${problems[0]}”的问题，因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
+      : `我能做这件事，是因为${evidenceReason.trim().replace(/[。.]$/, '')}。`
     : '';
   const missingIds = [
     experience.trim() ? '' : 'evidenceFacts',
-    evidenceSentence ? '' : 'evidenceSentence',
+    evidenceSentence.trim() ? '' : 'evidenceSentence',
   ].filter(Boolean);
 
   const saveAndContinue = () => {
-    onAnswer('evidenceProblem', evidenceProblem);
     onAnswer('evidenceReason', evidenceReason);
     onAnswer('evidenceSentence', evidenceSentence);
     onSubmit(missingIds);
@@ -2365,7 +2313,7 @@ function DayFiveSinglePage({
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>先列经验素材</h2>
+          <h2>列出你的经验</h2>
           <p>列出与服务相关的过往经验，你做过什么、交付过什么。</p>
           <details className="worksheet-help">
             <summary>查看经验素材的例子</summary>
@@ -2388,34 +2336,29 @@ function DayFiveSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>从素材中选择你的实力担当</h2>
-          <p>注释：先选择客户痛点，再结合你的经验素材完成句子。</p>
-          <div className="evidence-builder">
-            <span>我可以帮你解决</span>
-            {problemOptions.length ? (
-              <select value={evidenceProblem} onChange={(event) => onAnswer('evidenceProblem', event.target.value)}>
-                <option value="">选择一个客户痛点</option>
-                {problemOptions.map((problem) => <option value={problem} key={problem}>“{problem}”</option>)}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={evidenceProblem}
-                placeholder="先写下客户痛点"
-                onChange={(event) => onAnswer('evidenceProblem', event.target.value)}
-              />
-            )}
-            <span>的问题，因为</span>
-            <input
-              type="text"
-              value={evidenceReason}
-              placeholder="结合上面的经验，说清楚为什么是你"
-              onChange={(event) => onAnswer('evidenceReason', event.target.value)}
-            />
+          <h2>开始造句</h2>
+          <div className="evidence-formula" aria-label="服务说明句子公式">
+            <span>句子公式是：</span>
+            <p>
+              <u>{valueLine.replace(/[。；;.]$/, '') || '第 4 关填写的价值句'}</u>；
+              我适合服务的人是 <u>{audience || '第 2 关填写的客户'}</u>；
+              他们常见的问题是{' '}
+              {Array.from({ length: 3 }, (_, index) => (
+                <span key={`formula-problem-${index + 1}`}>
+                  <u>{problems[index] || `问题 ${index + 1}`}</u>{index < 2 ? '、' : '；'}
+                </span>
+              ))}
+              我能做这件事，是因为 <u>{evidenceReason.replace(/[。.]$/, '') || '________________'}</u>。
+            </p>
           </div>
-          <div className="evidence-preview">
-            {evidenceSentence || '选好客户痛点并补充经验后，这里会生成一句完整证据。'}
-          </div>
+          <label htmlFor="day-five-evidence">把最后一句证据写下来</label>
+          <textarea
+            id="day-five-evidence"
+            className="evidence-sentence-textarea"
+            value={evidenceReason}
+            placeholder="例如：我结合自己的需求做过很多小产品，知道怎样让 AI 按照我的意思执行"
+            onChange={(event) => onAnswer('evidenceReason', event.target.value)}
+          />
         </div>
       </section>
 
@@ -2463,9 +2406,9 @@ function DaySixSinglePage({
   const assembled = [
     valueLine.trim(),
     fitAudience.trim() ? `适合：${fitAudience.trim()}` : '',
-    filledProblems.length ? `常见卡点：${filledProblems.join('；')}` : '',
+    filledProblems.length ? `常见卡点：\n${filledProblems.map((problem) => `· ${problem}`).join('\n')}` : '',
     evidence.trim(),
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n\n');
   const displayedStatement = optimizedStatement.trim() || assembled;
   const complete = Boolean(valueLine.trim() && fitAudience.trim() && filledProblems.length && evidence.trim());
 
@@ -2597,8 +2540,27 @@ function DaySixSinglePage({
               autoFocus
               onChange={(event) => onAnswer('optimizedStatement', event.target.value)}
             />
+          ) : optimizedStatement.trim() ? (
+            <p>{optimizedStatement}</p>
           ) : (
-            <p>{displayedStatement || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+            <div className="structured-statement">
+              <p className="statement-value-line">{valueLine || '上面的答案会在这里自动拼成一段完整说明。'}</p>
+              {fitAudience && (
+                <div className="statement-detail-row">
+                  <strong>适合：</strong>
+                  <span>{fitAudience}</span>
+                </div>
+              )}
+              {filledProblems.length > 0 && (
+                <div className="statement-detail-row statement-problem-row">
+                  <strong>常见卡点：</strong>
+                  <ul>
+                    {filledProblems.map((problem) => <li key={problem}>{problem}</li>)}
+                  </ul>
+                </div>
+              )}
+              {evidence && <p className="statement-evidence-line">{evidence}</p>}
+            </div>
           )}
           <span>{displayedStatement.length} 字</span>
         </div>
