@@ -2,6 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import { days, stages, type Day, type Prompt } from './curriculum';
+import {
+  createProgressSnapshot,
+  downloadProgressBackup,
+  loadLatestSnapshot,
+  loadLocalProgress,
+  readProgressBackup,
+  saveLocalProgress,
+  type LocalProgressState,
+} from './local-progress';
 
 type View =
   | 'intro'
@@ -19,12 +28,7 @@ type View =
 type AnswerMap = Record<string, string>;
 type BooleanMap = Record<string, boolean>;
 
-type SavedState = {
-  answers?: AnswerMap;
-  completed?: BooleanMap;
-  deferred?: BooleanMap;
-  currentDay?: number;
-};
+type SavedState = LocalProgressState;
 
 type SelectionStep = {
   kind: 'selection';
@@ -111,7 +115,6 @@ type FlowStep =
   | SelectionStep
   | { kind: 'action'; text: string };
 
-const STORAGE_KEY = 'talent-to-value-demo-v1';
 const keyFor = (day: number, id: string) => `${day}:${id}`;
 const MERGED_DAY_NUMBERS = new Set([12, 14]);
 const visibleDays = days.filter((day) => !MERGED_DAY_NUMBERS.has(day.day));
@@ -891,11 +894,78 @@ function WeekFourChecklistPage({
   );
 }
 
+function DataSafetyDialog({
+  open,
+  saveStatus,
+  lastSavedAt,
+  message,
+  onClose,
+  onDownload,
+  onRestore,
+  onImport,
+}: {
+  open: boolean;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  lastSavedAt: string;
+  message: string;
+  onClose: () => void;
+  onDownload: () => void;
+  onRestore: () => void;
+  onImport: (file: File) => void;
+}) {
+  if (!open) return null;
+  const statusText = saveStatus === 'saving'
+    ? '正在保存到本机……'
+    : saveStatus === 'error'
+      ? '本机保存失败，请立即下载备份。'
+      : lastSavedAt
+        ? `已保存到本机 · ${new Date(lastSavedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+        : '内容会自动保存在当前设备和浏览器中。';
+
+  return (
+    <div className="data-safety-overlay" role="dialog" aria-modal="true" aria-labelledby="data-safety-title">
+      <section className="data-safety-dialog">
+        <header>
+          <div>
+            <span>LOCAL BACKUP</span>
+            <h2 id="data-safety-title">备份与恢复</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭备份与恢复">关闭</button>
+        </header>
+        <p className="data-safety-intro">你的内容不会上传。网页会自动保存当前进度、保留最近的本机快照；下载备份文件后，也可以在其他设备上导入。</p>
+        <p className={`data-save-status is-${saveStatus}`}>{statusText}</p>
+        <div className="data-safety-actions">
+          <button className="main-button" type="button" onClick={onDownload}>下载全部备份</button>
+          <label className="secondary-button data-import-button">
+            导入备份
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onImport(file);
+                event.target.value = '';
+              }}
+            />
+          </label>
+          <button className="secondary-button" type="button" onClick={onRestore}>恢复最近快照</button>
+        </div>
+        <p className="data-safety-warning">清理浏览器数据前，请先下载备份文件。</p>
+        {message && <p className="data-safety-message" role="status">{message}</p>}
+      </section>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
   const [previewMode, setPreviewMode] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState('');
+  const [backupMessage, setBackupMessage] = useState('');
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [completed, setCompleted] = useState<BooleanMap>({});
   const [deferred, setDeferred] = useState<BooleanMap>({});
@@ -1037,12 +1107,13 @@ export default function Home() {
     },
   ];
 
-  /* eslint-disable react-hooks/set-state-in-effect -- restoring device-local progress is intentional */
+  /* eslint-disable react-hooks/set-state-in-effect -- restoring and reporting device-local progress is intentional */
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw) as SavedState;
+    let active = true;
+    const restore = async () => {
+      try {
+        const saved = await loadLocalProgress();
+        if (active && saved) {
         const reconciled = reconcileSavedProgress(saved);
         const savedAnswers = reconciled.answers;
         const savedCompleted = reconciled.completed;
@@ -1061,21 +1132,34 @@ export default function Home() {
           setView(nextDay ? 'day' : 'overview');
         }
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } finally {
-      setHydrated(true);
-    }
+      } catch {
+        if (active) setBackupMessage('没有读取到可用的本地进度，可以导入以前下载的备份。');
+      } finally {
+        if (active) setHydrated(true);
+      }
+    };
+    void restore();
+    return () => {
+      active = false;
+    };
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ answers, completed, deferred, currentDay }),
-    );
+    setSaveStatus('saving');
+    const timer = window.setTimeout(() => {
+      void saveLocalProgress({ answers, completed, deferred, currentDay })
+        .then((savedAt) => {
+          setLastSavedAt(savedAt);
+          setSaveStatus('saved');
+        })
+        .catch(() => {
+          setSaveStatus('error');
+        });
+    }, 500);
+    return () => window.clearTimeout(timer);
   }, [answers, completed, currentDay, deferred, hydrated]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!levelsOpen) return;
@@ -1090,6 +1174,98 @@ export default function Home() {
       window.removeEventListener('keydown', close);
     };
   }, [levelsOpen]);
+
+  useEffect(() => {
+    if (!backupOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setBackupOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', close);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', close);
+    };
+  }, [backupOpen]);
+
+  const progressState = (answerOverrides: AnswerMap = {}): SavedState => ({
+    answers: { ...answers, ...answerOverrides },
+    completed,
+    deferred,
+    currentDay,
+  });
+
+  const applyProgressState = (saved: SavedState, message: string) => {
+    const reconciled = reconcileSavedProgress(saved);
+    const nextDay = visibleDays.find((day) => !reconciled.completed[String(day.day)]);
+    const resumeDay = nextDay?.day ?? 30;
+    setAnswers(reconciled.answers);
+    setCompleted(reconciled.completed);
+    setDeferred(reconciled.deferred);
+    setCurrentDay(resumeDay);
+    setPreviewMode(false);
+    setLevelsOpen(false);
+    setBackupOpen(false);
+    setBackupMessage(message);
+    setView(nextDay ? 'day' : 'overview');
+    window.scrollTo({ top: 0 });
+  };
+
+  const createManualBackup = async (label: string, download: boolean, answerOverrides: AnswerMap = {}) => {
+    const state = progressState(answerOverrides);
+    if (Object.keys(answerOverrides).length) setAnswers(state.answers ?? {});
+    setSaveStatus('saving');
+    let fileDownloaded = false;
+    if (download) {
+      try {
+        downloadProgressBackup(state, label);
+        fileDownloaded = true;
+      } catch {
+        fileDownloaded = false;
+      }
+    }
+    try {
+      const envelope = await createProgressSnapshot(state, label);
+      setLastSavedAt(envelope.savedAt);
+      setSaveStatus('saved');
+      setBackupMessage(download
+        ? fileDownloaded
+          ? '备份文件已下载，同时已保存一份本机快照。'
+          : '本机快照已保存，但浏览器没有完成文件下载，请再试一次。'
+        : '已保存一份本机快照。');
+    } catch {
+      setSaveStatus('error');
+      setBackupMessage(fileDownloaded
+        ? '备份文件已下载，但本机快照保存失败，请保留刚刚下载的文件。'
+        : '备份失败，请检查浏览器是否允许本地存储或文件下载。');
+    }
+  };
+
+  const importBackup = async (file: File) => {
+    try {
+      const envelope = await readProgressBackup(file);
+      if (!window.confirm('导入后会用备份内容替换当前页面中的进度，是否继续？')) return;
+      await createProgressSnapshot(envelope.state, `导入：${envelope.label}`);
+      applyProgressState(envelope.state, `已导入 ${new Date(envelope.savedAt).toLocaleString('zh-CN')} 的备份。`);
+    } catch {
+      setBackupMessage('无法导入：请选择由本工具导出的 JSON 备份文件。');
+    }
+  };
+
+  const restorePreviousSnapshot = async () => {
+    try {
+      const snapshot = await loadLatestSnapshot();
+      if (!snapshot) {
+        setBackupMessage('目前还没有可以恢复的本机快照。');
+        return;
+      }
+      if (!window.confirm(`将恢复“${snapshot.label}”（${new Date(snapshot.savedAt).toLocaleString('zh-CN')}），是否继续？`)) return;
+      applyProgressState(snapshot.state, `已恢复“${snapshot.label}”。`);
+    } catch {
+      setBackupMessage('没有找到可恢复的本机快照。');
+    }
+  };
 
   const navigateToDay = (dayNumber: number) => {
     setCurrentDay(dayNumber);
@@ -1118,32 +1294,6 @@ export default function Home() {
 
   const setAnswer = (id: string, value: string) => {
     const previousValue = answers[keyFor(currentDay, id)] ?? '';
-    const downstreamStart =
-      currentDay === 2 && id === 'selectedAudience' && previousValue.trim() !== value.trim()
-        ? 3
-        : currentDay === 3 && ['problemCandidates', 'topProblems'].includes(id) && previousValue !== value
-          ? 4
-          : currentDay === 4 && ['focusProblem', 'valueOutcome', 'generatedDraft', 'valueVersions', 'selectedValue'].includes(id) && previousValue !== value
-            ? 5
-            : currentDay === 5 && ['evidenceFacts', 'evidenceProblem', 'evidenceReason', 'evidenceSentence'].includes(id) && previousValue !== value
-              ? 6
-              : currentDay === 6 && ['statementValue', 'statementFit', 'statementProblem1', 'statementProblem2', 'statementProblem3', 'statementEvidence', 'optimizedStatement', 'firstStatement'].includes(id) && previousValue !== value
-                ? 7
-                : currentDay === 8 && id === 'workEvidence' && previousValue !== value
-                  ? 9
-                  : currentDay === 9 && id === 'resultEvidence' && previousValue !== value
-                    ? 10
-                    : currentDay === 10 && id === 'specificFeedback' && previousValue !== value
-                      ? 11
-                    : currentDay === 11 && id === 'stories' && previousValue !== value
-                        ? 13
-                        : currentDay === 13 && ['representativeWorks', 'representativeWorkDrafts', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
-                          ? 15
-                          : currentDay === 20 && previousValue !== value
-                            ? 21
-                            : currentDay >= 22 && currentDay <= 29 && previousValue !== value
-                              ? currentDay + 1
-                              : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
         && id === 'problemCandidates'
@@ -1187,36 +1337,9 @@ export default function Home() {
       ) {
         next[keyFor(6, 'optimizedStatement')] = '';
       }
-      if (currentDay >= 22 && currentDay <= 26 && previousValue !== value) {
-        next[keyFor(27, 'purchasePageDraft')] = '';
-        next[keyFor(29, 'purchasePageFinal')] = '';
-        next[keyFor(30, 'finalPurchasePage')] = '';
-      }
-      if (currentDay === 27 && previousValue !== value) {
-        next[keyFor(29, 'purchasePageFinal')] = '';
-        next[keyFor(30, 'finalPurchasePage')] = '';
-      }
-      if (currentDay === 29 && previousValue !== value) {
-        next[keyFor(30, 'finalPurchasePage')] = '';
-      }
       return next;
     });
     setDeferred((previous) => ({ ...previous, [keyFor(currentDay, id)]: false }));
-    if (downstreamStart) {
-      setCompleted((previous) => {
-        const next = { ...previous };
-        for (let day = downstreamStart; day <= 30; day += 1) next[String(day)] = false;
-        return next;
-      });
-      setDeferred((previous) => {
-        const next = { ...previous };
-        Object.keys(next).forEach((key) => {
-          const day = Number(key.split(':')[0]);
-          if (day >= downstreamStart) delete next[key];
-        });
-        return next;
-      });
-    }
     if (!value.trim() || dependentSelectionWillBeEmpty) {
       setCompleted((previous) => ({ ...previous, [String(currentDay)]: false }));
     }
@@ -1253,26 +1376,48 @@ export default function Home() {
     }
   };
 
-  const finishCurrentDay = (missingIds: string[]) => {
+  const finishCurrentDay = (
+    missingIds: string[],
+    options?: { answerOverrides?: AnswerMap; snapshotLabel?: string },
+  ) => {
     const missing = new Set(missingIds);
-    setDeferred((previous) => {
-      const next = { ...previous };
-      if (currentDay >= 22 && currentDay <= 29) {
-        Object.keys(next).forEach((key) => {
-          if (key.startsWith(`${currentDay}:`)) delete next[key];
+    const nextAnswers = { ...answers, ...(options?.answerOverrides ?? {}) };
+    const nextDeferred = { ...deferred };
+    if (currentDay >= 22 && currentDay <= 29) {
+      Object.keys(nextDeferred).forEach((key) => {
+        if (key.startsWith(`${currentDay}:`)) delete nextDeferred[key];
+      });
+      missingIds.forEach((id) => {
+        nextDeferred[keyFor(currentDay, id)] = true;
+      });
+    } else {
+      flow.forEach((step, index) => {
+        const id = flowStepId(step, index);
+        nextDeferred[keyFor(currentDay, id)] = missing.has(id);
+      });
+    }
+    const nextCompleted = { ...completed, [String(currentDay)]: true };
+    if (options?.answerOverrides) setAnswers(nextAnswers);
+    setDeferred(nextDeferred);
+    setCompleted(nextCompleted);
+    if (options?.snapshotLabel) {
+      setSaveStatus('saving');
+      void createProgressSnapshot({
+        answers: nextAnswers,
+        completed: nextCompleted,
+        deferred: nextDeferred,
+        currentDay,
+      }, options.snapshotLabel)
+        .then((envelope) => {
+          setLastSavedAt(envelope.savedAt);
+          setSaveStatus('saved');
+          setBackupMessage(`已保存“${options.snapshotLabel}”的本机快照。`);
+        })
+        .catch(() => {
+          setSaveStatus('error');
+          setBackupMessage('文章已保留在页面中，但创建独立快照失败，请立即下载备份。');
         });
-        missingIds.forEach((id) => {
-          next[keyFor(currentDay, id)] = true;
-        });
-      } else {
-        flow.forEach((step, index) => {
-          const id = flowStepId(step, index);
-          next[keyFor(currentDay, id)] = missing.has(id);
-        });
-      }
-      return next;
-    });
-    setCompleted((previous) => ({ ...previous, [String(currentDay)]: true }));
+    }
     if (currentDay === 30 && firstIncomplete < 30) {
       setCurrentDay(firstIncomplete);
       setPreviewMode(false);
@@ -1395,12 +1540,26 @@ export default function Home() {
     window.scrollTo({ top: 0 });
   };
 
+  const backupDialog = (
+    <DataSafetyDialog
+      open={backupOpen}
+      saveStatus={saveStatus}
+      lastSavedAt={lastSavedAt}
+      message={backupMessage}
+      onClose={() => setBackupOpen(false)}
+      onDownload={() => void createManualBackup('手动备份', true)}
+      onRestore={() => void restorePreviousSnapshot()}
+      onImport={(file) => void importBackup(file)}
+    />
+  );
+
   if (!hydrated) return <main className="mvp-home" aria-busy="true" />;
 
   if (view === 'intro') {
     return (
-      <main className="mvp-home home-shell">
-        <section className="editorial-home">
+      <>
+        <main className="mvp-home home-shell">
+          <section className="editorial-home">
           <header className="home-masthead">
             <span>TALENT TO VALUE · 四周计划</span>
             <span>能力 → 服务 → 产品</span>
@@ -1423,15 +1582,19 @@ export default function Home() {
               开始 <span aria-hidden="true">→</span>
             </button>
           </div>
-        </section>
-      </main>
+            <button className="data-safety-trigger" type="button" onClick={() => setBackupOpen(true)}>备份与恢复</button>
+          </section>
+        </main>
+        {backupDialog}
+      </>
     );
   }
 
   if (view === 'overview') {
     return (
-      <main className="mvp-home overview-shell">
-        <section className="overview-frame">
+      <>
+        <main className="mvp-home overview-shell">
+          <section className="overview-frame">
           <header className="home-masthead">
             <button type="button" onClick={() => setView('intro')}>← 返回首页</button>
             <span>THE ROUTE · 04 STAGES</span>
@@ -1468,17 +1631,24 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </section>
-        <LevelList
-          open={levelsOpen}
-          answers={answers}
-          completed={completed}
-          deferred={deferred}
-          firstIncomplete={firstIncomplete}
-          onClose={() => setLevelsOpen(false)}
-          onSelect={navigateToDay}
-        />
-      </main>
+            <button className="data-safety-trigger" type="button" onClick={() => setBackupOpen(true)}>备份与恢复</button>
+          </section>
+          <LevelList
+            open={levelsOpen}
+            answers={answers}
+            completed={completed}
+            deferred={deferred}
+            firstIncomplete={firstIncomplete}
+            onClose={() => setLevelsOpen(false)}
+            onSelect={navigateToDay}
+            onBackup={() => {
+              setLevelsOpen(false);
+              setBackupOpen(true);
+            }}
+          />
+        </main>
+        {backupDialog}
+      </>
     );
   }
 
@@ -1672,6 +1842,7 @@ export default function Home() {
           <p className="program-complete-note">这不是最终版，而是一版可以开始被看见、被询问和被购买的产品。</p>
           <div className="program-complete-actions">
             <button className="secondary-button" type="button" onClick={() => setView('overview')}>回到总览</button>
+            <button className="secondary-button" type="button" onClick={() => void createManualBackup('四周最终成果', true)}>下载全部备份</button>
             <button className="main-button" type="button" onClick={() => navigateToDay(30)}>查看我的购买入口 →</button>
           </div>
         </section>
@@ -1680,6 +1851,7 @@ export default function Home() {
   }
 
   return (
+    <>
     <main className="mvp-day">
       <DaySidebar
         currentDay={currentDay}
@@ -1690,6 +1862,7 @@ export default function Home() {
         onHome={() => setView('intro')}
         onSelectStage={navigateToStage}
         onSelect={navigateToDay}
+        onBackup={() => setBackupOpen(true)}
       />
 
       <section className="day-workspace">
@@ -1735,9 +1908,17 @@ export default function Home() {
                 previewMode={previewMode}
                 firstIncomplete={firstIncomplete}
                 onAnswer={setAnswer}
-                onSubmit={(missingIds) => {
+                onBackup={(answerOverrides, download) => createManualBackup(
+                  `${getVisibleStep(currentDay).label} ${contentWritingConfigs[currentDay].name}`,
+                  download,
+                  answerOverrides,
+                )}
+                onSubmit={(missingIds, answerOverrides) => {
                   if (previewMode) navigateToDay(firstIncomplete);
-                  else finishCurrentDay(missingIds);
+                  else finishCurrentDay(missingIds, {
+                    answerOverrides,
+                    snapshotLabel: `${getVisibleStep(currentDay).label} ${contentWritingConfigs[currentDay].name}`,
+                  });
                 }}
               />
             ) : currentDay === 21 ? (
@@ -1858,7 +2039,10 @@ export default function Home() {
               <DayTwentyAuditPage
                 answers={answers}
                 onAnswer={setAnswer}
-                onSubmit={() => finishCurrentDay([])}
+                onSubmit={(answerOverrides) => finishCurrentDay([], {
+                  answerOverrides,
+                  snapshotLabel: '3.6 五篇内容最终版',
+                })}
               />
             ) : (
               <DayWorksheet
@@ -1883,8 +2067,14 @@ export default function Home() {
         firstIncomplete={firstIncomplete}
         onClose={() => setLevelsOpen(false)}
         onSelect={navigateToDay}
+        onBackup={() => {
+          setLevelsOpen(false);
+          setBackupOpen(true);
+        }}
       />
     </main>
+    {backupDialog}
+    </>
   );
 }
 
@@ -2217,7 +2407,7 @@ function DayFourSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>开始造句（建议多写，要很具体的写）</h2>
+          <h2>开始造句（建议多写，要写得具体）</h2>
           <div className="sentence-formula" aria-label="自我介绍句子公式">
             <span>造句公式是：</span>
             <p>我帮助【本轮服务的人】解决【选择的问题】，让他能够【得到的结果】。</p>
@@ -2591,6 +2781,7 @@ function DaySixSinglePage({
   );
 
   const refreshFromPrevious = () => {
+    if (!window.confirm('重新获取会替换当前服务说明中的内容，是否继续？')) return;
     onAnswer('statementValue', latestValueLine);
     onAnswer('statementFit', latestFitAudience);
     [0, 1, 2].forEach((index) => onAnswer(`statementProblem${index + 1}`, earlierProblems[index] ?? ''));
@@ -3146,7 +3337,7 @@ function DayNineSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>用“从......，到......”造句</h2>
+          <h2>用“从……到……”造句</h2>
           <div className="result-work-list">
             {works.length ? works.map((work) => (
               <article className="result-work-card" key={work.id}>
@@ -3626,6 +3817,7 @@ function ThirdWeekWritingPage({
   previewMode,
   firstIncomplete,
   onAnswer,
+  onBackup,
   onSubmit,
 }: {
   dayNumber: number;
@@ -3633,7 +3825,8 @@ function ThirdWeekWritingPage({
   previewMode: boolean;
   firstIncomplete: number;
   onAnswer: (id: string, value: string) => void;
-  onSubmit: (missingIds: string[]) => void;
+  onBackup: (answerOverrides: AnswerMap, download: boolean) => Promise<void>;
+  onSubmit: (missingIds: string[], answerOverrides: AnswerMap) => void;
 }) {
   const config = contentWritingConfigs[dayNumber];
   const title = answers[keyFor(dayNumber, config.titleId)] ?? '';
@@ -3659,11 +3852,12 @@ function ThirdWeekWritingPage({
     onAnswer('mergedArticle', value);
   };
 
-  const saveAndContinue = () => {
-    onAnswer('mergedArticleSource', mergedDraft);
-    onAnswer('mergedArticle', mergedArticle);
-    onSubmit(missingIds);
+  const articleOverrides = {
+    [keyFor(dayNumber, 'mergedArticleSource')]: mergedDraft,
+    [keyFor(dayNumber, 'mergedArticle')]: mergedArticle,
   };
+
+  const saveAndContinue = () => onSubmit(missingIds, articleOverrides);
   return (
     <div className="single-day-form third-week-writing-form">
       <section className="single-task-block content-writing-guide">
@@ -3736,9 +3930,12 @@ function ThirdWeekWritingPage({
         </div>
       </section>
 
-      <div className="single-day-submit submit-only">
+      <div className="single-day-submit third-week-backup-actions">
+        <button className="secondary-button" type="button" onClick={() => void onBackup(articleOverrides, true)}>
+          下载本篇备份
+        </button>
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          {previewMode ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →` : '进入下一关 →'}
+          {previewMode ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →` : '保存并备份，进入下一关 →'}
         </button>
       </div>
     </div>
@@ -3752,7 +3949,7 @@ function DayTwentyAuditPage({
 }: {
   answers: AnswerMap;
   onAnswer: (id: string, value: string) => void;
-  onSubmit: () => void;
+  onSubmit: (answerOverrides: AnswerMap) => void;
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -3831,12 +4028,15 @@ ${articles}`;
   };
 
   const finishAudit = () => {
-    finalArticles.forEach((article) => onAnswer(article.finalId, article.value));
-    onAnswer('contentAudit', 'completed');
-    onSubmit();
+    const answerOverrides = Object.fromEntries([
+      ...finalArticles.map((article) => [keyFor(20, article.finalId), article.value]),
+      [keyFor(20, 'contentAudit'), 'completed'],
+    ]);
+    onSubmit(answerOverrides);
   };
 
   const refreshFromPrevious = () => {
+    if (!window.confirm('重新获取会替换下面五篇最终版当前的内容，是否继续？')) return;
     sourceArticles.forEach((article) => {
       onAnswer(`finalArticle${article.dayNumber}`, article.value);
     });
@@ -4068,7 +4268,7 @@ function FourthWeekPage({
     '你好，我最近整理了一项小服务。',
     chosenOffer ? `它叫“${chosenOffer}”` : '',
     fitAudience ? `，主要适合${fitAudience}` : '',
-    offerProblem ? `，解决“${offerProblem}”的问题。` : '。',
+    offerProblem ? `，解决“${offerProblem}”的问题。` : '',
     '我想请你从真实购买者的角度看一下：你是否看得懂会得到什么？如果暂时不会购买，最犹豫或最看不懂的地方是什么？不用客气，直接说真实感受就可以。',
   ].join('');
   const copyText = async (value: string, field: string) => {
@@ -4634,6 +4834,7 @@ function DaySidebar({
   onHome,
   onSelectStage,
   onSelect,
+  onBackup,
 }: {
   currentDay: number;
   answers: AnswerMap;
@@ -4643,6 +4844,7 @@ function DaySidebar({
   onHome: () => void;
   onSelectStage: (stage: number) => void;
   onSelect: (day: number) => void;
+  onBackup: () => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
 
@@ -4655,6 +4857,7 @@ function DaySidebar({
       <header>
         <button type="button" onClick={onHome}>教你如何把才华变成钱</button>
         <span>{visibleDays.filter((day) => completed[String(day.day)]).length} / {visibleDays.length} 已推进</span>
+        <button className="sidebar-backup-button" type="button" onClick={onBackup}>备份与恢复</button>
       </header>
       <div className="sidebar-progress" aria-hidden="true">
         <span style={{ width: `${(visibleDays.filter((day) => completed[String(day.day)]).length / visibleDays.length) * 100}%` }} />
@@ -4696,6 +4899,7 @@ function LevelList({
   firstIncomplete,
   onClose,
   onSelect,
+  onBackup,
 }: {
   open: boolean;
   answers: AnswerMap;
@@ -4704,6 +4908,7 @@ function LevelList({
   firstIncomplete: number;
   onClose: () => void;
   onSelect: (day: number) => void;
+  onBackup: () => void;
 }) {
   if (!open) return null;
   return (
@@ -4716,6 +4921,7 @@ function LevelList({
           </div>
           <button type="button" onClick={onClose} aria-label="关闭关卡列表">关闭</button>
         </header>
+        <button className="level-backup-button" type="button" onClick={onBackup}>备份与恢复</button>
         <div className="level-list">
           {visibleDays.map((day) => {
             const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);

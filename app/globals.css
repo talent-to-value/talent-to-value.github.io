@@ -437,6 +437,7 @@ select:focus-visible {
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid rgba(255, 250, 240, 0.26);
+  flex-wrap: wrap;
 }
 
 .day-sidebar > header button {
@@ -458,6 +459,29 @@ select:focus-visible {
   font-weight: 850;
   line-height: 1.4;
   text-align: right;
+}
+
+.day-sidebar > header .sidebar-backup-button {
+  flex: 0 0 100%;
+  color: var(--pink);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.data-safety-trigger {
+  min-height: 40px;
+  padding: 0 14px;
+  position: fixed;
+  z-index: 24;
+  left: 20px;
+  bottom: 20px;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--pink);
 }
 
 .sidebar-progress {
@@ -806,6 +830,14 @@ select:focus-visible {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.third-week-backup-actions {
+  justify-content: flex-end;
+}
+
+.third-week-backup-actions .secondary-button {
+  min-height: 52px;
 }
 
 .worksheet-help {
@@ -4456,14 +4488,141 @@ select:focus-visible {
   background: rgba(28, 38, 31, 0.48);
 }
 
+.data-safety-overlay {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(28, 38, 31, 0.72);
+}
+
+.data-safety-dialog {
+  width: min(680px, 100%);
+  max-height: calc(100dvh - 48px);
+  padding: 30px;
+  overflow: auto;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+  box-shadow: 12px 12px 0 var(--pink);
+}
+
+.data-safety-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.data-safety-dialog header span {
+  color: #a74868;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.data-safety-dialog h2 {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: 34px;
+}
+
+.data-safety-dialog header button {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.data-safety-intro {
+  margin: 22px 0 0;
+  padding: 18px 20px;
+  border-left: 6px solid var(--pink);
+  background: var(--pink-soft);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.data-save-status {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.data-save-status.is-error {
+  color: #a74868;
+}
+
+.data-safety-actions {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.data-safety-actions .main-button,
+.data-safety-actions .secondary-button {
+  min-height: 50px;
+}
+
+.data-import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.data-import-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.data-safety-warning,
+.data-safety-message {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.data-safety-warning {
+  color: var(--muted);
+}
+
+.data-safety-message {
+  padding: 12px 14px;
+  background: var(--paper);
+  font-weight: 750;
+}
+
 .level-panel {
   width: min(760px, 100%);
   max-height: min(820px, calc(100dvh - 48px));
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--ink);
   background: var(--paper);
+}
+
+.level-backup-button {
+  min-height: 46px;
+  padding: 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--pink-soft);
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .level-panel > header {
@@ -5007,6 +5166,7 @@ select:focus-visible {
   }
 
   .single-day-submit .main-button,
+  .third-week-backup-actions .secondary-button,
   .completion-actions .main-button,
   .completion-actions .secondary-button {
     width: 100%;
@@ -5015,6 +5175,35 @@ select:focus-visible {
 
   .completion-actions {
     flex-direction: column-reverse;
+  }
+
+  .data-safety-trigger {
+    min-height: 38px;
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .data-safety-overlay {
+    padding: 12px;
+  }
+
+  .data-safety-dialog {
+    max-height: calc(100dvh - 24px);
+    padding: 20px;
+    box-shadow: 6px 6px 0 var(--pink);
+  }
+
+  .data-safety-dialog h2 {
+    font-size: 28px;
+  }
+
+  .data-safety-actions {
+    display: grid;
+  }
+
+  .data-safety-actions .main-button,
+  .data-safety-actions .secondary-button {
+    width: 100%;
   }
 
   .carry-card,

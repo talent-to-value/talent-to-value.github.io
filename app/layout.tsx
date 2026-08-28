@@ -6,13 +6,13 @@ const siteUrl = 'https://talent-to-value-30-days.flowing202008.chatgpt.site';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: '教你如何把才华变成钱',
-  description: '用 30 关想清楚：你能帮谁、别人为什么信你，以及怎样把能力变成可以购买的服务或产品。',
+  description: '用 28 关想清楚：你能帮谁、别人为什么信你，以及怎样把能力变成可以购买的服务或产品。',
   icons: {
     icon: '/favicon.png',
   },
   openGraph: {
     title: '教你如何把才华变成钱',
-    description: '30 关，一步一步把能力变成可以购买的服务或产品。',
+    description: '28 关，一步一步把能力变成可以购买的服务或产品。',
     type: 'website',
     url: siteUrl,
     images: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: '教你如何把才华变成钱',
-    description: '30 关，一步一步把能力变成可以购买的服务或产品。',
+    description: '28 关，一步一步把能力变成可以购买的服务或产品。',
     images: [`${siteUrl}/og.png`],
   },
 };
