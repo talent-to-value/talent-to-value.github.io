@@ -3083,23 +3083,42 @@ select:focus-visible {
   justify-content: flex-end;
 }
 
-.day-seven-purpose {
+.day-seven-purpose,
+.day-seven-instructions {
   padding: 20px 22px;
   border-left: 6px solid var(--pink);
   background: var(--paper);
 }
 
-.day-seven-purpose h2 {
+.day-seven-purpose h2,
+.day-seven-instructions h2 {
   margin: 0;
   font-family: var(--serif);
   font-size: 24px;
   font-weight: 650;
 }
 
-.day-seven-purpose p {
+.day-seven-purpose p,
+.day-seven-instructions p {
   margin: 10px 0 0;
   font-size: 16px;
   line-height: 1.75;
+}
+
+.day-seven-instructions ul {
+  margin: 14px 0 0;
+  padding-left: 24px;
+  display: grid;
+  gap: 8px;
+}
+
+.day-seven-instructions li {
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.day-seven-instructions li::marker {
+  color: #a74868;
 }
 
 .test-message-panel,
@@ -3143,6 +3162,14 @@ select:focus-visible {
 .test-statement-preview {
   min-height: 0;
   margin: 22px;
+}
+
+.final-statement-panel {
+  margin-top: 16px;
+}
+
+.final-statement-preview .final-statement-editor {
+  min-height: 190px;
 }
 
 .statement-copy-button {

@@ -2702,6 +2702,17 @@ function DaySevenSinglePage({
         <p>你自己觉得说清楚了，不代表别人真的能理解。把服务说明发给身边的人，是为了验证他们能不能说出你服务谁、解决什么问题，以及什么情况下会想到找你。记录对方的原话，才能知道需要调整的是表达，还是服务本身。</p>
       </section>
 
+      <section className="day-seven-instructions">
+        <h2>具体要做什么？</h2>
+        <p>复制下方服务说明，发给五个测试对象，然后问他们下方问题：</p>
+        <ul>
+          <li>你觉得我是帮谁的？</li>
+          <li>你觉得我解决什么问题？</li>
+          <li>什么情况下你会想到找我？</li>
+        </ul>
+        <p>记录他们反馈的原话，如果他们复述不出来，就需要修改。</p>
+      </section>
+
       <section className="test-message-panel">
         <div className="test-message-heading">
           <div>
@@ -2780,14 +2791,26 @@ function DaySevenSinglePage({
         <span className="task-number">03</span>
         <div>
           <h2>确定最终稿</h2>
-          <textarea
-            value={revisedStatement}
-            placeholder="第 6 关的初版服务说明会自动填入这里"
-            onChange={(event) => {
-              onAnswer('revisedSourceStatement', testStatement);
-              onAnswer('revisedStatement', event.target.value);
-            }}
-          />
+          <div className="test-message-panel final-statement-panel">
+            <div className="test-message-heading">
+              <div>
+                <span>你的最终服务说明</span>
+                <strong>结合测试反馈，在这里修改出最终版</strong>
+              </div>
+            </div>
+            <div className="assembly-preview test-statement-preview final-statement-preview">
+              <AutoGrowTextarea
+                className="statement-result-editor final-statement-editor"
+                value={revisedStatement}
+                aria-label="编辑最终服务说明"
+                placeholder="第 6 关的初版服务说明会自动填入这里"
+                onChange={(event) => {
+                  onAnswer('revisedSourceStatement', testStatement);
+                  onAnswer('revisedStatement', event.target.value);
+                }}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
