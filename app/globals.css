@@ -666,6 +666,12 @@ select:focus-visible {
   line-height: 1.2;
 }
 
+.day-orientation-7 > h1 {
+  max-width: none;
+  white-space: nowrap;
+  font-size: clamp(27px, 2.8vw, 34px);
+}
+
 .day-orientation-copy {
   padding: 16px 18px;
   display: block;
@@ -2671,11 +2677,15 @@ select:focus-visible {
 }
 
 .evidence-formula p {
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   font-family: var(--serif);
   font-size: 19px;
   font-weight: 650;
-  line-height: 2;
+  line-height: 1.75;
+}
+
+.evidence-formula > span + p {
+  margin-top: 16px;
 }
 
 .evidence-formula u {
@@ -2966,14 +2976,22 @@ select:focus-visible {
   line-height: 1.8;
 }
 
+.structured-statement .statement-value-line {
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(36, 69, 44, 0.5);
+  font-size: 20px;
+  font-weight: 650;
+}
+
 .structured-statement .statement-detail-row {
-  margin: 22px 0 0;
-  padding: 0;
+  margin: 16px 0 0;
+  padding: 15px 18px;
   display: grid;
-  grid-template-columns: 126px minmax(0, 1fr);
+  grid-template-columns: 118px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
-  border: 0;
+  border: 1px solid rgba(36, 69, 44, 0.35);
+  background: var(--paper-light);
 }
 
 .structured-statement .statement-detail-row > strong {
@@ -2991,18 +3009,25 @@ select:focus-visible {
 
 .structured-statement .statement-detail-row ul {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding-left: 22px;
+  display: grid;
+  gap: 5px;
+  list-style: disc;
 }
 
 .structured-statement .statement-detail-row li::before {
-  content: "·";
-  margin-right: 10px;
-  font-weight: 900;
+  content: none;
+}
+
+.structured-statement .statement-detail-row li::marker {
+  color: #a74868;
+  font-size: 0.9em;
 }
 
 .structured-statement .statement-evidence-line {
-  margin-top: 24px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(36, 69, 44, 0.5);
 }
 
 .assembly-preview .statement-result-editor {
@@ -3058,6 +3083,25 @@ select:focus-visible {
   justify-content: flex-end;
 }
 
+.day-seven-purpose {
+  padding: 20px 22px;
+  border-left: 6px solid var(--pink);
+  background: var(--paper);
+}
+
+.day-seven-purpose h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 650;
+}
+
+.day-seven-purpose p {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
 .test-message-panel,
 .copy-message {
   border: 1px solid var(--ink);
@@ -3094,6 +3138,11 @@ select:focus-visible {
   font-family: var(--serif);
   font-size: 17px;
   line-height: 1.8;
+}
+
+.test-statement-preview {
+  min-height: 0;
+  margin: 22px;
 }
 
 .statement-copy-button {
@@ -4200,6 +4249,10 @@ select:focus-visible {
   .day-scroll {
     width: min(920px, calc(100% - 36px));
     padding-top: 30px;
+  }
+
+  .day-orientation-7 > h1 {
+    white-space: normal;
   }
 
   .week-two-checklist-card .week-checklist-heading h1 {

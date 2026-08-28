@@ -1657,7 +1657,7 @@ export default function Home() {
 
         <div className="day-scroll">
           <div className="day-sheet">
-          <section className="day-orientation">
+          <section className={`day-orientation day-orientation-${currentDay}`}>
             <div className="day-kicker-row">
               <span>第 {activeStage.id} 周 · {activeStage.title}</span>
               {activeDayIsPartial && (
@@ -2280,10 +2280,6 @@ function DayFiveSinglePage({
   onSubmit: (missingIds: string[]) => void;
 }) {
   const experience = answers[keyFor(5, 'evidenceFacts')] ?? '';
-  const audience = answers[keyFor(2, 'selectedAudience')] ?? '';
-  const valueLine = answers[keyFor(4, 'selectedValue')]
-    || answers[keyFor(4, 'generatedDraft')]
-    || '';
   const selectedProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
   const allProblems = uniqueLines(answers[keyFor(3, 'problemCandidates')] ?? '');
   const problems = (selectedProblems.length ? selectedProblems : allProblems).slice(0, 3);
@@ -2339,17 +2335,10 @@ function DayFiveSinglePage({
           <h2>开始造句</h2>
           <div className="evidence-formula" aria-label="服务说明句子公式">
             <span>句子公式是：</span>
-            <p>
-              <u>{valueLine.replace(/[。；;.]$/, '') || '第 4 关填写的价值句'}</u>；
-              我适合服务的人是 <u>{audience || '第 2 关填写的客户'}</u>；
-              他们常见的问题是{' '}
-              {Array.from({ length: 3 }, (_, index) => (
-                <span key={`formula-problem-${index + 1}`}>
-                  <u>{problems[index] || `问题 ${index + 1}`}</u>{index < 2 ? '、' : '；'}
-                </span>
-              ))}
-              我能做这件事，是因为 <u>{evidenceReason.replace(/[。.]$/, '') || '________________'}</u>。
-            </p>
+            <p>我帮【谁】，解决【什么问题】，让他能【得到什么结果】；</p>
+            <p>我适合服务的人是【谁】；</p>
+            <p>他们常见的问题是【问题 1】、【问题 2】、【问题 3】；</p>
+            <p>我能做这件事，是因为【你的经验】。</p>
           </div>
           <label htmlFor="day-five-evidence">把最后一句证据写下来</label>
           <textarea
@@ -2368,6 +2357,41 @@ function DayFiveSinglePage({
           保存证据，进入第 6 关 →
         </button>
       </div>
+    </div>
+  );
+}
+
+function StructuredServiceStatement({
+  valueLine,
+  fitAudience,
+  problems,
+  evidence,
+  emptyText = '上面的答案会在这里自动拼成一段完整说明。',
+}: {
+  valueLine: string;
+  fitAudience: string;
+  problems: string[];
+  evidence: string;
+  emptyText?: string;
+}) {
+  return (
+    <div className="structured-statement">
+      <p className="statement-value-line">{valueLine || emptyText}</p>
+      {fitAudience && (
+        <div className="statement-detail-row">
+          <strong>适合：</strong>
+          <span>{fitAudience}</span>
+        </div>
+      )}
+      {problems.length > 0 && (
+        <div className="statement-detail-row statement-problem-row">
+          <strong>常见卡点：</strong>
+          <ul>
+            {problems.map((problem) => <li key={problem}>{problem}</li>)}
+          </ul>
+        </div>
+      )}
+      {evidence && <p className="statement-evidence-line">{evidence}</p>}
     </div>
   );
 }
@@ -2543,24 +2567,12 @@ function DaySixSinglePage({
           ) : optimizedStatement.trim() ? (
             <p>{optimizedStatement}</p>
           ) : (
-            <div className="structured-statement">
-              <p className="statement-value-line">{valueLine || '上面的答案会在这里自动拼成一段完整说明。'}</p>
-              {fitAudience && (
-                <div className="statement-detail-row">
-                  <strong>适合：</strong>
-                  <span>{fitAudience}</span>
-                </div>
-              )}
-              {filledProblems.length > 0 && (
-                <div className="statement-detail-row statement-problem-row">
-                  <strong>常见卡点：</strong>
-                  <ul>
-                    {filledProblems.map((problem) => <li key={problem}>{problem}</li>)}
-                  </ul>
-                </div>
-              )}
-              {evidence && <p className="statement-evidence-line">{evidence}</p>}
-            </div>
+            <StructuredServiceStatement
+              valueLine={valueLine}
+              fitAudience={fitAudience}
+              problems={filledProblems}
+              evidence={evidence}
+            />
           )}
           <span>{displayedStatement.length} 字</span>
         </div>
@@ -2611,6 +2623,21 @@ function DaySevenSinglePage({
   const [copiedInitial, setCopiedInitial] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const testStatement = answers[keyFor(6, 'firstStatement')] ?? '';
+  const earlierProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
+  const statementValue = answers[keyFor(6, 'statementValue')]
+    || answers[keyFor(4, 'selectedValue')]
+    || answers[keyFor(4, 'generatedDraft')]
+    || '';
+  const statementAudience = answers[keyFor(6, 'statementFit')]
+    || answers[keyFor(2, 'selectedAudience')]
+    || '';
+  const statementProblems = [0, 1, 2]
+    .map((index) => answers[keyFor(6, `statementProblem${index + 1}`)] || earlierProblems[index] || '')
+    .map((problem) => problem.trim())
+    .filter(Boolean);
+  const statementEvidence = answers[keyFor(6, 'statementEvidence')]
+    || answers[keyFor(5, 'evidenceSentence')]
+    || '';
   const legacyTesterNames = uniqueLines(answers[keyFor(7, 'testers')] ?? '');
   const testers = Array.from({ length: 5 }, (_, index) => {
     const number = index + 1;
@@ -2627,7 +2654,11 @@ function DaySevenSinglePage({
   });
   const namedCount = testers.filter((tester) => tester.name.trim()).length;
   const feedbackCount = testers.filter((tester) => tester.name.trim() && tester.feedback.trim()).length;
-  const revisedStatement = answers[keyFor(7, 'revisedStatement')] ?? testStatement;
+  const savedRevisedStatement = answers[keyFor(7, 'revisedStatement')] ?? '';
+  const revisedSourceStatement = answers[keyFor(7, 'revisedSourceStatement')] ?? '';
+  const revisedStatement = !savedRevisedStatement.trim() || revisedSourceStatement !== testStatement
+    ? testStatement
+    : savedRevisedStatement;
   const aiPrompt = `我正在优化一份服务说明。请不要直接替我重写，先帮我判断反馈中哪些属于表达不清、哪些只是个人偏好、哪些值得采纳。\n\n我的初稿：\n${testStatement || '【请粘贴你的初稿】'}\n\n测试对象的反馈：\n【请把收集到的反馈复制到这里】\n\n请按下面的顺序回答：\n1. 总结反馈中反复出现的误解；\n2. 区分值得采纳的反馈和不必采纳的个人偏好；\n3. 指出初稿中最需要调整的具体位置；\n4. 给出修改方向，但先不要直接生成最终稿。`;
 
   const copyText = async (text: string, type: 'initial' | 'prompt') => {
@@ -2654,6 +2685,7 @@ function DaySevenSinglePage({
       .join('\n\n');
     onAnswer('testers', testerNames);
     onAnswer('retellFeedback', feedback);
+    onAnswer('revisedSourceStatement', testStatement);
     onAnswer('revisedStatement', revisedStatement);
     const missingIds = [
       namedCount < 5 ? 'testers' : '',
@@ -2665,6 +2697,11 @@ function DaySevenSinglePage({
 
   return (
     <div className="single-day-form day-seven-form">
+      <section className="day-seven-purpose">
+        <h2>为什么要做这一步？</h2>
+        <p>你自己觉得说清楚了，不代表别人真的能理解。把服务说明发给身边的人，是为了验证他们能不能说出你服务谁、解决什么问题，以及什么情况下会想到找你。记录对方的原话，才能知道需要调整的是表达，还是服务本身。</p>
+      </section>
+
       <section className="test-message-panel">
         <div className="test-message-heading">
           <div>
@@ -2672,7 +2709,19 @@ function DaySevenSinglePage({
             <strong>{testStatement ? '把这份说明发给身边的人' : '第 6 关暂时没有可用的服务说明'}</strong>
           </div>
         </div>
-        <p className="test-statement">{testStatement || '请先回到第 6 关生成一份服务说明。'}</p>
+        <div className="assembly-preview test-statement-preview">
+          {statementValue || statementAudience || statementProblems.length || statementEvidence ? (
+            <StructuredServiceStatement
+              valueLine={statementValue}
+              fitAudience={statementAudience}
+              problems={statementProblems}
+              evidence={statementEvidence}
+              emptyText="请先回到第 6 关生成一份服务说明。"
+            />
+          ) : (
+            <p>{testStatement || '请先回到第 6 关生成一份服务说明。'}</p>
+          )}
+        </div>
         <button className="secondary-button statement-copy-button" type="button" disabled={!testStatement} onClick={() => copyText(testStatement, 'initial')}>
           {copiedInitial ? '✓ 已复制' : '复制服务说明'}
         </button>
@@ -2734,7 +2783,10 @@ function DaySevenSinglePage({
           <textarea
             value={revisedStatement}
             placeholder="第 6 关的初版服务说明会自动填入这里"
-            onChange={(event) => onAnswer('revisedStatement', event.target.value)}
+            onChange={(event) => {
+              onAnswer('revisedSourceStatement', testStatement);
+              onAnswer('revisedStatement', event.target.value);
+            }}
           />
         </div>
       </section>
