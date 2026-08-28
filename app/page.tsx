@@ -1363,18 +1363,18 @@ export default function Home() {
               <span className="home-eyebrow">一套可以真正动手完成的引导工具</span>
               <h1>教你如何把才华变成钱</h1>
               <p>把脑子里模糊的能力，一步步整理成别人看得懂、愿意相信、可以买到的服务或产品。</p>
-              <button className="main-button" type="button" onClick={() => setView('overview')}>
-                开始 <span aria-hidden="true">→</span>
-              </button>
             </div>
             <aside className="home-question-card" aria-label="你可能正在面对的问题">
-              <span className="home-card-label">先从你的真实处境开始</span>
+              <span className="home-card-label">从你的真实需求开始</span>
               <ul className="pain-list">
                 <li>你有没有想过把自己的能力变成一个服务或者一项产品？</li>
                 <li>到底是什么阻碍了你？还是说你已经在做了但效果不好？</li>
                 <li>今天我们可以通过这个工具来理清楚。</li>
               </ul>
             </aside>
+            <button className="main-button home-start-button" type="button" onClick={() => setView('overview')}>
+              开始 <span aria-hidden="true">→</span>
+            </button>
           </div>
         </section>
       </main>
@@ -1403,7 +1403,6 @@ export default function Home() {
                   </div>
                   <h2>{stage.shortName}</h2>
                   <p>{stage.title}</p>
-                  <div className="stage-card-output">最后留下：{stage.output}</div>
                 </article>
               );
             })}

@@ -208,6 +208,8 @@ select:focus-visible {
 
 .home-shell .home-hero {
   min-height: calc(100dvh - 173px);
+  position: relative;
+  padding-bottom: clamp(118px, 9vw, 142px);
 }
 
 .home-shell .home-hero-copy {
@@ -220,19 +222,26 @@ select:focus-visible {
 .home-shell .home-eyebrow {
   margin-top: auto;
   color: var(--ink);
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .home-shell .home-hero-copy > p {
   color: var(--ink);
 }
 
-.home-shell .home-hero-copy .main-button {
-  align-self: flex-start;
-  margin-top: auto;
+.home-shell .home-masthead {
+  font-size: 15px;
+}
+
+.home-shell .home-start-button {
+  position: absolute;
+  right: 0;
+  bottom: 34px;
 }
 
 .home-shell .home-question-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--ink);
   background: var(--paper-light);
   color: var(--ink);
@@ -240,18 +249,23 @@ select:focus-visible {
 
 .home-shell .home-question-card .home-card-label {
   color: var(--ink);
+  font-size: 17px;
 }
 
 .home-shell .pain-list {
+  width: 100%;
+  margin: auto 0;
   border-top-color: rgba(36, 69, 44, 0.4);
 }
 
 .home-shell .pain-list li {
   border-bottom-color: rgba(36, 69, 44, 0.25);
+  font-size: 19px;
 }
 
 .home-shell .pain-list li::before {
   color: var(--pink);
+  font-size: 28px;
 }
 
 .main-button {
@@ -4070,6 +4084,30 @@ select:focus-visible {
     min-height: auto;
     padding: 42px 0 30px;
     display: block;
+  }
+
+  .home-shell .home-hero {
+    padding-bottom: 34px;
+  }
+
+  .home-shell .home-masthead {
+    font-size: 12px;
+  }
+
+  .home-shell .home-start-button {
+    width: auto;
+    margin: 26px 0 0 auto;
+    position: static;
+    display: block;
+  }
+
+  .home-shell .home-eyebrow,
+  .home-shell .home-question-card .home-card-label {
+    font-size: 15px;
+  }
+
+  .home-shell .pain-list li {
+    font-size: 17px;
   }
 
   .home-hero-copy h1,
