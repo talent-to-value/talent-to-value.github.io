@@ -113,6 +113,32 @@ type FlowStep =
 
 const STORAGE_KEY = 'talent-to-value-demo-v1';
 const keyFor = (day: number, id: string) => `${day}:${id}`;
+const MERGED_DAY_NUMBERS = new Set([12, 14]);
+const visibleDays = days.filter((day) => !MERGED_DAY_NUMBERS.has(day.day));
+const weekNames = ['第一周', '第二周', '第三周', '第四周'];
+
+function getVisibleStep(dayNumber: number) {
+  const day = days.find((item) => item.day === dayNumber) ?? days[0];
+  const stageDays = visibleDays.filter((item) => item.stage === day.stage);
+  const index = Math.max(0, stageDays.findIndex((item) => item.day === dayNumber));
+  return {
+    stage: day.stage,
+    index: index + 1,
+    total: stageDays.length,
+    label: `${day.stage}.${index + 1}`,
+    weekName: weekNames[day.stage - 1],
+  };
+}
+
+function nextVisibleDayNumber(dayNumber: number) {
+  const index = visibleDays.findIndex((day) => day.day === dayNumber);
+  return index >= 0 ? visibleDays[index + 1]?.day : undefined;
+}
+
+function visibleProgressIndex(dayNumber: number) {
+  const index = visibleDays.findIndex((day) => day.day === dayNumber);
+  return index >= 0 ? index + 1 : 1;
+}
 
 const clarityQuestions = [
   { id: 'clarityWho', label: '别人能看出你主要在帮助谁吗？' },
@@ -358,6 +384,44 @@ function parseRepresentativeWorks(value: string, works: WorkEvidence[]): Represe
       proof: source.proof,
     }] : [];
   }).slice(0, 3);
+}
+
+function parseRepresentativeWorkDrafts(
+  value: string,
+  works: WorkEvidence[],
+  selectedWorks: RepresentativeWork[],
+): RepresentativeWork[] {
+  let storedDrafts: RepresentativeWork[] = [];
+  if (value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        storedDrafts = parsed.flatMap((item) => {
+          if (!item || typeof item !== 'object') return [];
+          const candidate = item as Partial<RepresentativeWork>;
+          return typeof candidate.workId === 'string' ? [{
+            workId: candidate.workId,
+            what: typeof candidate.what === 'string' ? candidate.what : '',
+            problem: typeof candidate.problem === 'string' ? candidate.problem : '',
+            proof: typeof candidate.proof === 'string' ? candidate.proof : '',
+          }] : [];
+        });
+      }
+    } catch {
+      storedDrafts = [];
+    }
+  }
+
+  return works.map((work) => {
+    const saved = storedDrafts.find((item) => item.workId === work.id)
+      ?? selectedWorks.find((item) => item.workId === work.id);
+    return {
+      workId: work.id,
+      what: saved?.what || work.title,
+      problem: saved?.problem || work.problem,
+      proof: saved?.proof || work.proof,
+    };
+  });
 }
 
 function nextRecordId(prefix: string, records: Array<{ id: string }>) {
@@ -819,7 +883,7 @@ function WeekFourChecklistPage({
         </div>
         <footer className="week-checklist-actions">
           <button className="main-button" type="button" onClick={onContinue}>
-            确认，查看 30 关成果 <span aria-hidden="true">→</span>
+            确认，查看四周成果 <span aria-hidden="true">→</span>
           </button>
         </footer>
       </section>
@@ -840,8 +904,9 @@ export default function Home() {
   const activeDay = days[currentDay - 1];
   const activeStage = stages[activeDay.stage - 1];
   const flow = useMemo(() => getFlow(activeDay), [activeDay]);
-  const completedCount = days.filter((day) => completed[String(day.day)]).length;
-  const firstIncomplete = days.find((day) => !completed[String(day.day)])?.day ?? 30;
+  const completedCount = visibleDays.filter((day) => completed[String(day.day)]).length;
+  const firstIncomplete = visibleDays.find((day) => !completed[String(day.day)])?.day ?? 30;
+  const activeStep = getVisibleStep(currentDay);
   const activeDayIsPartial = (
     currentDay === 10 && answers[keyFor(10, 'feedbackStatus')] === 'waiting'
   ) || (
@@ -893,7 +958,7 @@ export default function Home() {
       ].filter(Boolean).join('\n')).join('\n\n'),
     },
     {
-      label: '一组能证明判断的认知变化',
+      label: '一组从经验中提炼出的判断',
       value: weekTwoCognition.map((record) => {
         const work = weekTwoWorks.find((item) => item.id === record.workId);
         return `${work?.title || '相关作品'}：${record.story}`;
@@ -982,7 +1047,7 @@ export default function Home() {
         const savedAnswers = reconciled.answers;
         const savedCompleted = reconciled.completed;
         const savedDeferred = reconciled.deferred;
-        const nextDay = days.find((day) => !savedCompleted[String(day.day)]);
+        const nextDay = visibleDays.find((day) => !savedCompleted[String(day.day)]);
         const resumeDay = nextDay?.day ?? 30;
         setAnswers(savedAnswers);
         setCompleted(savedCompleted);
@@ -1071,9 +1136,9 @@ export default function Home() {
                     ? 10
                     : currentDay === 10 && id === 'specificFeedback' && previousValue !== value
                       ? 11
-                      : currentDay === 11 && id === 'stories' && previousValue !== value
-                        ? 12
-                        : currentDay === 13 && ['representativeWorks', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
+                    : currentDay === 11 && id === 'stories' && previousValue !== value
+                        ? 13
+                        : currentDay === 13 && ['representativeWorks', 'representativeWorkDrafts', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
                           ? 15
                           : currentDay >= 15 && currentDay <= 19 && previousValue !== value
                             ? currentDay + 1
@@ -1184,7 +1249,7 @@ export default function Home() {
     if (completedCount === 0) {
       setView('week-one-start');
       window.scrollTo({ top: 0 });
-    } else if (completedCount === 30) {
+    } else if (completedCount === visibleDays.length) {
       navigateToDay(1);
     } else {
       navigateToDay(firstIncomplete);
@@ -1216,7 +1281,8 @@ export default function Home() {
       setPreviewMode(false);
       setView('day');
     } else if (currentDay < 30) {
-      const nextDay = currentDay > firstIncomplete ? firstIncomplete : currentDay + 1;
+      const nextVisibleDay = nextVisibleDayNumber(currentDay) ?? 30;
+      const nextDay = currentDay > firstIncomplete ? firstIncomplete : nextVisibleDay;
       setCurrentDay(nextDay);
       setPreviewMode(false);
       setView('day');
@@ -1257,21 +1323,6 @@ export default function Home() {
       return next;
     });
     setCompleted((previous) => ({ ...previous, '13': true, '14': true }));
-    setCurrentDay(15);
-    setPreviewMode(false);
-    setView('week-two-checklist');
-    window.scrollTo({ top: 0 });
-  };
-
-  const finishMergedDayFourteen = () => {
-    setCompleted((previous) => ({ ...previous, '14': true }));
-    setDeferred((previous) => {
-      const next = { ...previous };
-      Object.keys(next).forEach((key) => {
-        if (key.startsWith('14:')) delete next[key];
-      });
-      return next;
-    });
     setCurrentDay(15);
     setPreviewMode(false);
     setView('week-two-checklist');
@@ -1355,7 +1406,7 @@ export default function Home() {
       <main className="mvp-home home-shell">
         <section className="editorial-home">
           <header className="home-masthead">
-            <span>TALENT TO VALUE · 30 关</span>
+            <span>TALENT TO VALUE · 四周计划</span>
             <span>能力 → 服务 → 产品</span>
           </header>
           <div className="home-hero">
@@ -1410,14 +1461,14 @@ export default function Home() {
           <div className="overview-actions overview-actions-only">
             <div className="home-actions">
               <button className="main-button" type="button" onClick={startOrContinue}>
-                {completedCount === 30
-                  ? '进入第一关'
+                {completedCount === visibleDays.length
+                  ? '进入 1.1'
                   : completedCount
-                    ? `继续第 ${firstIncomplete} 关`
-                    : '进入第一关'}
+                    ? `继续 ${getVisibleStep(firstIncomplete).label}`
+                    : '进入 1.1'}
               </button>
               <button className="text-button" type="button" onClick={() => setLevelsOpen(true)}>
-                查看全部 30 关
+                查看全部步骤
               </button>
             </div>
           </div>
@@ -1490,7 +1541,7 @@ export default function Home() {
             <p>这一周我们将回答用户“我为什么信你？”的问题，结束后你将获得：</p>
             <ul>
               <li>一份作品与证据清单</li>
-              <li>一组能证明判断的认知变化</li>
+              <li>一组从经验中提炼出的判断</li>
               <li>1–3 个代表作品</li>
               <li>一页“为什么能信我”</li>
             </ul>
@@ -1609,12 +1660,12 @@ export default function Home() {
     return (
       <main className="week-transition-page program-complete-page">
         <section className="program-complete-card">
-          <span>30 DAYS · COMPLETE</span>
+          <span>FOUR WEEKS · COMPLETE</span>
           <div className="week-firework" aria-hidden="true">
             {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
             <b />
           </div>
-          <h1>恭喜你完成了 30 关</h1>
+          <h1>恭喜你完成了全部四周</h1>
           <p>你已经把一项能力整理成了第一版可以进入真实世界的产品。</p>
           <div className="program-result-list">
             <article><span>01</span><strong>一份清晰的服务说明</strong></article>
@@ -1649,10 +1700,10 @@ export default function Home() {
         <header className="day-header">
           <button className="mobile-menu-button" type="button" onClick={() => setLevelsOpen(true)}>☰ 目录</button>
           <button className="day-brand" type="button" onClick={() => setView('intro')}>把才华变成钱</button>
-          <span>第 {currentDay} / 30 关</span>
+          <span>{activeStep.weekName} · {activeStep.index} / {activeStep.total}</span>
         </header>
         <div className="day-progress" aria-hidden="true">
-          <span style={{ width: `${(currentDay / 30) * 100}%` }} />
+          <span style={{ width: `${(visibleProgressIndex(currentDay) / visibleDays.length) * 100}%` }} />
         </div>
 
         <div className="day-scroll">
@@ -1695,7 +1746,7 @@ export default function Home() {
               />
             ) : currentDay === 21 ? (
               <DayTwentyOnePublishPage
-                buttonLabel={previewMode ? `返回第 ${firstIncomplete} 关` : '完成发布与调整，查看第三周总结 →'}
+                buttonLabel={previewMode ? `返回 ${getVisibleStep(firstIncomplete).label}` : '完成发布与调整，查看第三周总结 →'}
                 onSubmit={() => {
                   if (previewMode) navigateToDay(firstIncomplete);
                   else finishThirdWeek();
@@ -1801,18 +1852,11 @@ export default function Home() {
                 onAnswer={setAnswer}
                 onSubmit={(missingIds) => finishCurrentDay(missingIds)}
               />
-            ) : currentDay === 12 ? (
-              <DayTwelvePlaceholder onSubmit={() => finishCurrentDay([])} />
             ) : currentDay === 13 ? (
               <DayThirteenCombinedPage
                 answers={answers}
                 onAnswer={setAnswer}
                 onSubmit={finishCombinedDaysThirteenAndFourteen}
-              />
-            ) : currentDay === 14 ? (
-              <DayFourteenMergedPage
-                onBack={() => navigateToDay(13)}
-                onContinue={finishMergedDayFourteen}
               />
             ) : currentDay === 20 ? (
               <DayTwentyAuditPage
@@ -1914,7 +1958,7 @@ function DayOneSinglePage({
       <div className="single-day-submit">
         <p>{partial ? '没填完也可以继续；未完成的部分会标记为待补充。' : '这一关已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={onSubmit}>
-          {partial ? '先保存，进入第 2 关 →' : '完成本关，进入第 2 关 →'}
+          {partial ? '先保存，进入 1.2 →' : '完成本关，进入 1.2 →'}
         </button>
       </div>
     </div>
@@ -1986,7 +2030,7 @@ function DayTwoSinglePage({
 
           {previousIntro && (
             <details className="worksheet-help">
-              <summary>查看我第 1 关的自我介绍</summary>
+              <summary>查看我在 1.1 写的自我介绍</summary>
               <p className="saved-answer">{previousIntro}</p>
             </details>
           )}
@@ -1996,7 +2040,7 @@ function DayTwoSinglePage({
       <div className="single-day-submit">
         <p>{hasDirection ? '之后的练习会先围绕这类人展开，随时可以回来修改。' : '暂时不确定也可以继续，这一关会标记为待补充。'}</p>
         <button className="main-button" type="button" onClick={onSubmit}>
-          {hasDirection ? '就先服务这类人，进入第 3 关 →' : '暂时不确定，进入第 3 关 →'}
+          {hasDirection ? '就先服务这类人，进入 1.3 →' : '暂时不确定，进入 1.3 →'}
         </button>
       </div>
     </div>
@@ -2087,7 +2131,7 @@ function DayThreeSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? '暂时没写完也可以继续，这一关会标记为待补充。' : '已选出这一轮最值得解决的卡点。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          完成本关，进入第 4 关 →
+          完成本关，进入 1.4 →
         </button>
       </div>
     </div>
@@ -2169,7 +2213,7 @@ function DayFourSinglePage({
         <div>
           <div className="answer-row">
             <span>最想服务的客户是：</span>
-            <strong>{audience || '第 2 关暂未填写'}</strong>
+            <strong>{audience || '1.2 暂未填写'}</strong>
           </div>
         </div>
       </section>
@@ -2263,7 +2307,7 @@ function DayFourSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? `还有 ${missingIds.length} 项未确定，会标记为待补充。` : '这一关已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          {missingIds.length ? '先保存，进入第 5 关 →' : '完成本关，进入第 5 关 →'}
+          {missingIds.length ? '先保存，进入 1.5 →' : '完成本关，进入 1.5 →'}
         </button>
       </div>
     </div>
@@ -2354,7 +2398,7 @@ function DayFiveSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? '没写完也可以继续，这一关会标记为待补充。' : '你的服务现在有了一句可以被验证的实力证据。'}</p>
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          保存证据，进入第 6 关 →
+          保存证据，进入 1.6 →
         </button>
       </div>
     </div>
@@ -2544,7 +2588,7 @@ function DaySixSinglePage({
         <span className="task-number">04</span>
         <div>
           <h2>为什么是你？</h2>
-          <p>这里不写“我很专业”，而是放入第 5 关的事实证据：你做过什么，证明你有能力推进这个问题。</p>
+          <p>这里不写“我很专业”，而是放入 1.5 的事实证据：你做过什么，证明你有能力推进这个问题。</p>
           <AutoGrowTextarea
             value={evidence}
             placeholder="例如：我已经为 3 位独立顾问重新整理过服务说明，并保留了修改前后的真实版本"
@@ -2604,7 +2648,7 @@ function DaySixSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          保存服务说明，进入第 7 关 →
+          保存服务说明，进入 1.7 →
         </button>
       </div>
     </div>
@@ -2717,7 +2761,7 @@ function DaySevenSinglePage({
         <div className="test-message-heading">
           <div>
             <span>你的初版服务说明</span>
-            <strong>{testStatement ? '把这份说明发给身边的人' : '第 6 关暂时没有可用的服务说明'}</strong>
+            <strong>{testStatement ? '把这份说明发给身边的人' : '1.6 暂时没有可用的服务说明'}</strong>
           </div>
         </div>
         <div className="assembly-preview test-statement-preview">
@@ -2727,10 +2771,10 @@ function DaySevenSinglePage({
               fitAudience={statementAudience}
               problems={statementProblems}
               evidence={statementEvidence}
-              emptyText="请先回到第 6 关生成一份服务说明。"
+              emptyText="请先回到 1.6 生成一份服务说明。"
             />
           ) : (
-            <p>{testStatement || '请先回到第 6 关生成一份服务说明。'}</p>
+            <p>{testStatement || '请先回到 1.6 生成一份服务说明。'}</p>
           )}
         </div>
         <button className="secondary-button statement-copy-button" type="button" disabled={!testStatement} onClick={() => copyText(testStatement, 'initial')}>
@@ -2803,7 +2847,7 @@ function DaySevenSinglePage({
                 className="statement-result-editor final-statement-editor"
                 value={revisedStatement}
                 aria-label="编辑最终服务说明"
-                placeholder="第 6 关的初版服务说明会自动填入这里"
+                placeholder="1.6 的初版服务说明会自动填入这里"
                 onChange={(event) => {
                   onAnswer('revisedSourceStatement', testStatement);
                   onAnswer('revisedStatement', event.target.value);
@@ -2832,19 +2876,32 @@ function DayEightSinglePage({
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
+  const savedWorkEvidence = answers[keyFor(8, 'workEvidence')] ?? '';
+  const legacyWorks = answers[keyFor(8, 'works')] ?? '';
   const storedWorks = parseWorkEvidence(
-    answers[keyFor(8, 'workEvidence')] ?? '',
-    answers[keyFor(8, 'works')] ?? '',
+    savedWorkEvidence,
+    legacyWorks,
   );
-  const works = storedWorks.length ? storedWorks : [{
-    id: 'work-1',
-    title: '',
+  const carriedWorkTitles = uniqueLines(
+    answers[keyFor(5, 'evidenceFacts')]
+      || answers[keyFor(6, 'statementEvidence')]
+      || answers[keyFor(5, 'evidenceSentence')]
+      || '',
+  );
+  const seededWorks = carriedWorkTitles.map((title, index) => ({
+    id: `work-${index + 1}`,
+    title,
     problem: '',
     proof: '',
     discarded: false,
-  }];
+  }));
+  const hasSavedWorks = Boolean(savedWorkEvidence.trim() || legacyWorks.trim());
+  const works = hasSavedWorks
+    ? storedWorks
+    : seededWorks.length
+      ? seededWorks
+      : [{ id: 'work-1', title: '', problem: '', proof: '', discarded: false }];
   const namedWorks = works.filter((work) => work.title.trim());
-  const keptWorks = namedWorks.filter((work) => !work.discarded);
 
   const saveWorks = (nextWorks: WorkEvidence[]) => {
     onAnswer('workEvidence', JSON.stringify(nextWorks));
@@ -2854,15 +2911,25 @@ function DayEightSinglePage({
     saveWorks(works.map((work) => (work.id === id ? { ...work, ...patch } : work)));
   };
 
-  const missing = keptWorks.length === 0
-    || keptWorks.some((work) => !work.problem.trim() || !work.proof.trim());
+  const deleteWork = (id: string) => {
+    saveWorks(works.filter((work) => work.id !== id));
+  };
+
+  const missing = namedWorks.length === 0
+    || namedWorks.some((work) => !work.problem.trim() || !work.proof.trim());
+
+  const saveAndContinue = () => {
+    saveWorks(works);
+    onSubmit(missing ? ['workEvidence'] : []);
+  };
 
   return (
     <div className="single-day-form evidence-work-form">
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>先写下来都做过什么</h2>
+          <h2>写下已完成的作品/创作</h2>
+          <div className="task-purpose-box">你做过哪些作品、项目或实际行动？</div>
           <details className="worksheet-help work-example">
             <summary>示例</summary>
             <ul>
@@ -2873,7 +2940,7 @@ function DayEightSinglePage({
           </details>
 
           <div className="work-title-list">
-            {works.map((work, index) => (
+            {works.length ? works.map((work, index) => (
               <div className="work-title-row" key={work.id}>
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <label className="sr-only" htmlFor={`work-title-${work.id}`}>作品 {index + 1}</label>
@@ -2884,8 +2951,9 @@ function DayEightSinglePage({
                   placeholder="作品名称"
                   onChange={(event) => updateWork(work.id, { title: event.target.value })}
                 />
+                <button className="delete-work-button" type="button" onClick={() => deleteWork(work.id)}>删除</button>
               </div>
-            ))}
+            )) : <p className="empty-inline">还没有作品，点击下方按钮新增。</p>}
           </div>
 
           <button
@@ -2910,7 +2978,8 @@ function DayEightSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>补充作品解决了什么问题、证明了什么？</h2>
+          <h2>让你的“证明”更完整</h2>
+          <div className="task-purpose-box">对每一个作品补充它解决的问题、能证明什么。</div>
           <details className="worksheet-help work-example">
             <summary>示例</summary>
             <div className="work-example-list">
@@ -2922,7 +2991,7 @@ function DayEightSinglePage({
 
           <div className="work-evidence-list">
             {namedWorks.length ? namedWorks.map((work, index) => (
-              <article className={work.discarded ? 'work-evidence-row is-discarded' : 'work-evidence-row'} key={work.id}>
+              <article className="work-evidence-row" key={work.id}>
                 <header>
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <h3>{work.title}</h3>
@@ -2930,30 +2999,21 @@ function DayEightSinglePage({
                 <div className="work-evidence-fields">
                   <label>
                     <span>解决了什么问题</span>
-                    <input
-                      type="text"
+                    <AutoGrowTextarea
                       value={work.problem}
-                      disabled={work.discarded}
+                      placeholder="这个作品解决了什么具体问题？"
                       onChange={(event) => updateWork(work.id, { problem: event.target.value })}
                     />
                   </label>
                   <label>
                     <span>能证明什么</span>
-                    <input
-                      type="text"
+                    <AutoGrowTextarea
                       value={work.proof}
-                      disabled={work.discarded}
+                      placeholder="这个作品能证明你具备什么能力或判断？"
                       onChange={(event) => updateWork(work.id, { proof: event.target.value })}
                     />
                   </label>
                 </div>
-                <button
-                  className="discard-work-button"
-                  type="button"
-                  onClick={() => updateWork(work.id, { discarded: !work.discarded })}
-                >
-                  {work.discarded ? '恢复这一条' : '舍弃这一条'}
-                </button>
               </article>
             )) : (
               <p className="empty-inline">先在上方写下作品名称。</p>
@@ -2963,8 +3023,8 @@ function DayEightSinglePage({
       </section>
 
       <div className="single-day-submit submit-only">
-        <button className="main-button" type="button" onClick={() => onSubmit(missing ? ['workEvidence'] : [])}>
-          保存，进入第 9 关 →
+        <button className="main-button" type="button" onClick={saveAndContinue}>
+          保存，进入 2.2 →
         </button>
       </div>
     </div>
@@ -2998,7 +3058,7 @@ function DayNineSinglePage({
         <div>
           <h2>这里怎么写？</h2>
           <div className="result-writing-guide">
-            <p>这一部分我们要写每个具体作品为自己带来的变化，以证明自己做过这件事后的认知成长或心得。</p>
+            <p>这一部分要写每个具体作品带来的实际变化，让别人看见你做完这件事后，行为、能力或业务发生了什么。</p>
             <strong>变化部分可以写：</strong>
             <ul>
               <li><b>行为变化：</b>从一直想写但没有开始，到写完并发布第一篇公众号文章。</li>
@@ -3012,7 +3072,7 @@ function DayNineSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>用“从——，到——”造句</h2>
+          <h2>用“从......，到......”造句</h2>
           <div className="result-work-list">
             {works.length ? works.map((work) => (
               <article className="result-work-card" key={work.id}>
@@ -3030,7 +3090,7 @@ function DayNineSinglePage({
                 />
               </article>
             )) : (
-              <p className="empty-inline">第 8 关还没有保留的作品。</p>
+              <p className="empty-inline">2.1 还没有填写作品。</p>
             )}
           </div>
         </div>
@@ -3038,7 +3098,7 @@ function DayNineSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missing ? ['resultEvidence'] : [])}>
-          保存，进入第 10 关 →
+          保存，进入 2.3 →
         </button>
       </div>
     </div>
@@ -3079,8 +3139,8 @@ function DayTenSinglePage({
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>什么反馈值得收集？</h2>
-          <p className="feedback-purpose">整理反馈，是为了证明你的作品不只是“自己觉得有用”，而是真的帮助别人解决过具体问题、产生过具体变化。</p>
+          <h2>整理什么样的反馈？</h2>
+          <p className="feedback-purpose key-explanation">整理反馈，是为了证明你的作品不只是“自己觉得有用”，而是真的帮助别人解决过具体问题、产生过具体变化。</p>
           <p>找到别人的反馈。聊天记录、评论、转介绍、读者私信都可以，只收具体的反馈。多小的反馈都可以写，只要足够具体。</p>
           <ol className="feedback-guidance-list">
             <li>
@@ -3089,7 +3149,7 @@ function DayTenSinglePage({
             </li>
             <li>
               <strong>收下能够说明具体变化的反馈</strong>
-              <span>例如：“我终于知道怎么介绍自己的服务了”“你帮我把一堆散的卖点理顺了”“我第一次意识到问题不在内容，而在价值没说清”“这个版本发出去以后，客户问得更具体了”。</span>
+              <span>例如：“我终于知道怎么介绍自己的服务了”、“你帮我把一堆散的卖点理顺了”、“我第一次意识到问题不在内容，而在价值没说清”、“这个版本发出去以后，客户问得更具体了”。</span>
             </li>
           </ol>
 
@@ -3151,7 +3211,7 @@ function DayTenSinglePage({
           后续我会继续补充反馈
         </button>
         <button className="main-button" type="button" disabled={!hasFeedback} onClick={() => onSubmit('complete', [])}>
-          已完成反馈，进入第 11 关 →
+          已完成反馈，进入 2.4 →
         </button>
       </div>
     </div>
@@ -3192,8 +3252,8 @@ function DayElevenSinglePage({
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>从具体事情里，提炼你的认知变化</h2>
-          <p>前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
+          <h2>从具体事情里，提炼你的判断</h2>
+          <p className="key-explanation">前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
           <div className="cognition-formula">我以前……后来我发现……所以我现在……</div>
           <h3 className="example-section-title">下方是两个示例</h3>
 
@@ -3222,7 +3282,7 @@ function DayElevenSinglePage({
               <div className="cognition-entry-row" key={record.id}>
                 <select
                   value={record.workId}
-                  aria-label={`第 ${index + 1} 条认知变化对应的作品`}
+                  aria-label={`第 ${index + 1} 条判断对应的作品`}
                   onChange={(event) => updateRecord(record.id, { workId: event.target.value })}
                 >
                   <option value="">选择作品</option>
@@ -3231,7 +3291,7 @@ function DayElevenSinglePage({
                 <span aria-hidden="true">：</span>
                 <AutoGrowTextarea
                   value={record.story}
-                  aria-label={`第 ${index + 1} 条认知变化`}
+                  aria-label={`第 ${index + 1} 条判断`}
                   placeholder="我以前……后来我发现……所以我现在……"
                   onChange={(event) => updateRecord(record.id, { story: event.target.value })}
                 />
@@ -3253,19 +3313,9 @@ function DayElevenSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(hasCognition ? [] : ['stories'])}>
-          保存，进入第 12 关 →
+          保存，进入 2.5 →
         </button>
       </div>
-    </div>
-  );
-}
-
-function DayTwelvePlaceholder({ onSubmit }: { onSubmit: () => void }) {
-  return (
-    <div className="single-day-form blank-day-form">
-      <button className="main-button" type="button" onClick={onSubmit}>
-        跳过第 12 关，进入第 13 关 →
-      </button>
     </div>
   );
 }
@@ -3284,6 +3334,11 @@ function DayThirteenCombinedPage({
     answers[keyFor(8, 'works')] ?? '',
   ).filter((work) => work.title.trim() && !work.discarded);
   const selectedWorks = parseRepresentativeWorks(answers[keyFor(13, 'representativeWorks')] ?? '', works);
+  const workDrafts = parseRepresentativeWorkDrafts(
+    answers[keyFor(13, 'representativeWorkDrafts')] ?? '',
+    works,
+    selectedWorks,
+  );
   const selectedIds = selectedWorks.map((work) => work.workId);
   const results = parseResultEvidence(answers[keyFor(9, 'resultEvidence')] ?? '', works);
   const cognition = parseCognitionRecords(answers[keyFor(11, 'stories')] ?? '', works);
@@ -3306,21 +3361,28 @@ function DayThirteenCombinedPage({
       return;
     }
     if (selectedWorks.length >= 3) return;
+    const draft = workDrafts.find((item) => item.workId === work.id);
     saveSelection([
       ...selectedWorks,
       {
         workId: work.id,
-        what: work.title,
-        problem: work.problem,
-        proof: work.proof,
+        what: draft?.what || work.title,
+        problem: draft?.problem || work.problem,
+        proof: draft?.proof || work.proof,
       },
     ]);
   };
 
-  const updateSelectedWork = (workId: string, patch: Partial<RepresentativeWork>) => {
-    saveSelection(selectedWorks.map((work) => (
+  const updateWorkDraft = (workId: string, patch: Partial<RepresentativeWork>) => {
+    const nextDrafts = workDrafts.map((work) => (
       work.workId === workId ? { ...work, ...patch } : work
-    )));
+    ));
+    onAnswer('representativeWorkDrafts', JSON.stringify(nextDrafts));
+    if (selectedIds.includes(workId)) {
+      saveSelection(selectedWorks.map((work) => (
+        work.workId === workId ? { ...work, ...patch } : work
+      )));
+    }
   };
 
   const updateBoundary = (id: 'notPromise' | 'canHelp', value: string) => {
@@ -3361,6 +3423,11 @@ function DayThirteenCombinedPage({
 
   return (
     <div className="single-day-form representative-day-form">
+      <section className="representative-page-intro">
+        <h2>这一页要做什么？</h2>
+        <p>把前面整理的作品、实际变化和判断合在一起，再补充你的能力边界，生成一份让客户看懂“为什么可以信你”的说明。</p>
+      </section>
+
       <section className="current-problem-panel">
         <span>你现在要解决什么问题：</span>
         <strong>{mainProblem || '第一周还没有选定唯一的问题'}</strong>
@@ -3370,72 +3437,65 @@ function DayThirteenCombinedPage({
         <span className="task-number">01</span>
         <div>
           <h2>选出与这个问题最相关的代表作品</h2>
-          <p>从已有作品中选 1–3 个。</p>
-          <div className="representative-choice-list">
+          <p>从已有作品中选 1–3 个。这里主要做选择；需要确认或修改时，再展开作品详情。</p>
+          <div className="representative-picker-list">
             {works.length ? works.map((work) => {
               const selected = selectedIds.includes(work.id);
               const maxed = selectedWorks.length >= 3 && !selected;
+              const draft = workDrafts.find((item) => item.workId === work.id) ?? {
+                workId: work.id,
+                what: work.title,
+                problem: work.problem,
+                proof: work.proof,
+              };
               return (
-                <button
-                  className={selected ? 'is-selected' : ''}
-                  type="button"
-                  key={work.id}
-                  aria-pressed={selected}
-                  disabled={maxed}
-                  onClick={() => toggleWork(work)}
-                >
-                  <span>{selected ? '✓' : '+'}</span>
-                  <strong>{work.title}</strong>
-                </button>
-              );
-            }) : <p className="empty-inline">第 8 关还没有可选择的作品。</p>}
-          </div>
-        </div>
-      </section>
-
-      <section className="single-task-block">
-        <span className="task-number">02</span>
-        <div>
-          <h2>把代表作品整理清楚</h2>
-          <div className="representative-work-list">
-            {selectedWorks.length ? selectedWorks.map((selected, index) => {
-              const source = works.find((work) => work.id === selected.workId);
-              return (
-                <article key={selected.workId}>
-                  <h3><span>{String(index + 1).padStart(2, '0')}</span>{source?.title}</h3>
-                  <label>
-                    <span>这是什么</span>
-                    <AutoGrowTextarea
-                      value={selected.what}
-                      placeholder="用一句话说明这个作品是什么"
-                      onChange={(event) => updateSelectedWork(selected.workId, { what: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <span>解决了什么问题</span>
-                    <AutoGrowTextarea
-                      value={selected.problem}
-                      placeholder="它解决了什么具体问题"
-                      onChange={(event) => updateSelectedWork(selected.workId, { problem: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <span>证明了什么</span>
-                    <AutoGrowTextarea
-                      value={selected.proof}
-                      placeholder="它能证明你的什么能力或判断"
-                      onChange={(event) => updateSelectedWork(selected.workId, { proof: event.target.value })}
-                    />
-                  </label>
+                <article className={selected ? 'is-selected' : ''} key={work.id}>
+                  <button
+                    className="representative-select-button"
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={maxed}
+                    onClick={() => toggleWork(work)}
+                  >
+                    <span>{selected ? '✓' : '+'}</span>
+                    <strong>{draft.what || work.title}</strong>
+                    <small>{selected ? '已选择' : maxed ? '最多选择 3 个' : '点击选择'}</small>
+                  </button>
+                  <details className="representative-detail-panel">
+                    <summary>查看已填写的作品详情</summary>
+                    <div>
+                      <label>
+                        <span>作品名称</span>
+                        <AutoGrowTextarea
+                          value={draft.what}
+                          onChange={(event) => updateWorkDraft(work.id, { what: event.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>解决了什么问题</span>
+                        <AutoGrowTextarea
+                          value={draft.problem}
+                          onChange={(event) => updateWorkDraft(work.id, { problem: event.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>证明了什么</span>
+                        <AutoGrowTextarea
+                          value={draft.proof}
+                          onChange={(event) => updateWorkDraft(work.id, { proof: event.target.value })}
+                        />
+                      </label>
+                    </div>
+                  </details>
                 </article>
               );
-            }) : <p className="empty-inline">先在上方选择 1–3 个作品。</p>}
+            }) : <p className="empty-inline">2.1 还没有可选择的作品。</p>}
           </div>
         </div>
       </section>
 
       <section className="single-task-block trust-boundary-block">
-        <span className="task-number">03</span>
+        <span className="task-number">02</span>
         <div>
           <h2>写清楚你的承诺边界</h2>
           <p className="boundary-example">例如：我不承诺某篇内容爆，也不承诺立刻成交；但我能帮你先把“别人为什么该找你”这件事说清楚。</p>
@@ -3478,26 +3538,8 @@ function DayThirteenCombinedPage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          保存，进入第 15 关 →
+          保存，查看第二周总结 →
         </button>
-      </div>
-    </div>
-  );
-}
-
-function DayFourteenMergedPage({
-  onBack,
-  onContinue,
-}: {
-  onBack: () => void;
-  onContinue: () => void;
-}) {
-  return (
-    <div className="single-day-form merged-day-form">
-      <p>这一关的内容已经合并到第 13 关。</p>
-      <div>
-        <button className="secondary-button" type="button" onClick={onBack}>查看第 13 关</button>
-        <button className="main-button" type="button" onClick={onContinue}>进入第 15 关 →</button>
       </div>
     </div>
   );
@@ -3526,6 +3568,7 @@ function ThirdWeekWritingPage({
       answers[keyFor(dayNumber, section.id)]?.trim() ? '' : section.id
     )),
   ].filter(Boolean);
+  const nextDay = nextVisibleDayNumber(dayNumber);
 
   return (
     <div className="single-day-form third-week-writing-form">
@@ -3586,8 +3629,8 @@ function ThirdWeekWritingPage({
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
           {previewMode
-            ? `保存草稿，返回第 ${firstIncomplete} 关 →`
-            : `保存，进入第 ${dayNumber + 1} 关 →`}
+            ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →`
+            : nextDay ? `保存，进入 ${getVisibleStep(nextDay).label} →` : '保存 →'}
         </button>
       </div>
     </div>
@@ -3748,7 +3791,7 @@ ${articles}`;
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={finishAudit}>
-          我已完成检查，进入第 21 关 →
+          我已完成检查，进入 3.7 →
         </button>
       </div>
     </div>
@@ -3878,9 +3921,10 @@ function FourthWeekPage({
   const startAction = getAnswer(27, 'startAction');
   const purchasePageDraft = getAnswer(27, 'purchasePageDraft');
   const purchasePageFinal = firstFilled(getAnswer(29, 'purchasePageFinal'), purchasePageDraft);
+  const nextVisibleDay = nextVisibleDayNumber(dayNumber);
   const nextButtonLabel = previewMode
-    ? `返回第 ${firstIncomplete} 关`
-    : `保存，进入第 ${dayNumber + 1} 关 →`;
+    ? `返回 ${getVisibleStep(firstIncomplete).label}`
+    : nextVisibleDay ? `保存，进入 ${getVisibleStep(nextVisibleDay).label} →` : '保存 →';
   const works = parseWorkEvidence(
     getAnswer(8, 'workEvidence'),
     getAnswer(8, 'works'),
@@ -3988,7 +4032,7 @@ function FourthWeekPage({
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
           <h2>先让客户判断：这是不是为我准备的？</h2>
           <p>“适合谁”帮助对的人认出自己；“不适合谁”减少错配，让后面的交付更稳定。</p>
-          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
+          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '4.1 还没有选择产品'}</strong></div>
         </div></section>
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>写清楚适合谁</h2>
@@ -4012,7 +4056,7 @@ function FourthWeekPage({
         <section className="day-twenty-four-intro">
           <h2>客户不是购买一个服务名，而是购买一个具体结果</h2>
           <p>这一页只回答两件事：你重点解决什么问题，结束后客户手里会多出哪些可以清点的东西。</p>
-          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '第 22 关还没有选择产品'}</strong></div>
+          <div className="current-offer-strip"><span>本轮产品</span><strong>{chosenOffer || '4.1 还没有选择产品'}</strong></div>
         </section>
         <section className="day-twenty-four-field">
           <h2>重点解决什么问题</h2>
@@ -4057,7 +4101,7 @@ function FourthWeekPage({
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
           <h2>价格不是孤零零的数字</h2>
           <p>客户需要先看懂会拿到什么、服务如何进行、边界在哪里，再判断这个价格是否成立。</p>
-          <div className="price-context"><span>客户会拿到</span><p>{uniqueLines(deliverables).join('；') || '第 24 关还没有填写交付物'}</p></div>
+          <div className="price-context"><span>客户会拿到</span><p>{uniqueLines(deliverables).join('；') || '4.3 还没有填写交付物'}</p></div>
         </div></section>
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>写下一个你现在能站得住的价格</h2>
@@ -4133,8 +4177,8 @@ function FourthWeekPage({
       <div className="single-day-form fourth-week-form">
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
           <h2>先私下测试，不要公开发布</h2>
-          <p>第 28 关只发给少量最可能需要的人；第 30 关才会把它放进主页、置顶内容等公开位置。先发 1 位也可以，最多记录 5 位。</p>
-          <details className="worksheet-help"><summary>查看准备发送的购买说明</summary><pre className="purchase-page-preview">{purchasePageDraft || '第 27 关还没有生成购买说明。'}</pre></details>
+          <p>4.7 只发给少量最可能需要的人；4.9 才会把它放进主页、置顶内容等公开位置。先发 1 位也可以，最多记录 5 位。</p>
+          <details className="worksheet-help"><summary>查看准备发送的购买说明</summary><pre className="purchase-page-preview">{purchasePageDraft || '4.6 还没有生成购买说明。'}</pre></details>
           <div className="purchase-share-actions">
             <button className="secondary-button" type="button" disabled={!purchasePageDraft.trim()} onClick={() => copyText(purchasePageDraft, 'purchase-page')}>
               {copiedField === 'purchase-page' ? '✓ 已复制购买说明' : '复制购买说明'}
@@ -4156,8 +4200,8 @@ function FourthWeekPage({
           {records.length < 5 && <button className="linked-add-button" type="button" onClick={() => saveRecords([...records, { id: nextRecordId('buyer', records), name: '', feedback: '' }])}><span aria-hidden="true">＋</span> 添加一个测试对象</button>}
         </div></section>
         {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit([])}>{nextButtonLabel}</button></div> : <div className="single-day-submit feedback-submit-actions">
-          <button className="secondary-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'waiting'); submit(['purchaseResults']); }}>等待反馈，先进入第 29 关</button>
-          <button className="main-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'complete'); submit(hasFeedback ? [] : ['purchaseResults']); }}>保存反馈，进入第 29 关 →</button>
+          <button className="secondary-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'waiting'); submit(['purchaseResults']); }}>等待反馈，先进入 4.8</button>
+          <button className="main-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'complete'); submit(hasFeedback ? [] : ['purchaseResults']); }}>保存反馈，进入 4.8 →</button>
         </div>}
       </div>
     );
@@ -4189,7 +4233,7 @@ function FourthWeekPage({
         <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
           <h2>只改重复出现的问题</h2>
           <p>不要因为一个人的意见推翻全部。先把反馈放在一起，只处理反复出现的理解障碍和购买障碍。</p>
-          <details className="worksheet-help"><summary>查看测试反馈</summary>{records.length ? <ul>{records.map((record) => <li key={record.id}><b>{record.name || '未命名对象'}：</b>{record.feedback || '尚未填写反馈'}</li>)}</ul> : <p>第 28 关还没有反馈，可以先标记待补充并继续整理页面。</p>}</details>
+          <details className="worksheet-help"><summary>查看测试反馈</summary>{records.length ? <ul>{records.map((record) => <li key={record.id}><b>{record.name || '未命名对象'}：</b>{record.feedback || '尚未填写反馈'}</li>)}</ul> : <p>4.7 还没有反馈，可以先标记待补充并继续整理页面。</p>}</details>
         </div></section>
         <section className="single-task-block"><span className="task-number">02</span><div>
           <h2>哪些问题重复出现了？</h2>
@@ -4199,7 +4243,7 @@ function FourthWeekPage({
         </div></section>
         <section className="single-task-block"><span className="task-number">03</span><div>
           <h2>修改并保存最终购买说明</h2>
-          <div className="purchase-page-editor"><AutoGrowTextarea value={finalPage} placeholder="第 27 关的购买入口会自动带到这里" onChange={(event) => onAnswer('purchasePageFinal', event.target.value)} /><span>{finalPage.replace(/\s/g, '').length} 字</span></div>
+          <div className="purchase-page-editor"><AutoGrowTextarea value={finalPage} placeholder="4.6 的购买入口会自动带到这里" onChange={(event) => onAnswer('purchasePageFinal', event.target.value)} /><span>{finalPage.replace(/\s/g, '').length} 字</span></div>
         </div></section>
         <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit(missing)}>{nextButtonLabel}</button></div>
       </div>
@@ -4232,7 +4276,7 @@ function FourthWeekPage({
     <div className="single-day-form fourth-week-form">
       <section className="single-task-block fourth-week-intro"><span className="task-number">01</span><div>
         <h2>现在正式公开你的第一版</h2>
-        <p>第 28 关是私下发给少量对象测试；这一关才是把购买说明放到公开入口，观察有没有人带着具体问题来找你。</p>
+        <p>4.7 是私下发给少量对象测试；这一步才是把购买说明放到公开入口，观察有没有人带着具体问题来找你。</p>
         <details className="worksheet-help"><summary>查看最终购买说明</summary><pre className="purchase-page-preview">{finalPurchasePage || '前面还没有保存购买说明。'}</pre></details>
       </div></section>
       <section className="single-task-block"><span className="task-number">02</span><div>
@@ -4251,9 +4295,9 @@ function FourthWeekPage({
           <AutoGrowTextarea value={getAnswer(30, 'marketResult')} placeholder="记录咨询、购买、拒绝或暂时没有反应" onChange={(event) => onAnswer('marketResult', event.target.value)} />
         </div>
       </details>
-      {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => onSubmit([])}>{`返回第 ${firstIncomplete} 关`}</button></div> : <div className="single-day-submit feedback-submit-actions">
+      {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => onSubmit([])}>{`返回 ${getVisibleStep(firstIncomplete).label}`}</button></div> : <div className="single-day-submit feedback-submit-actions">
         <button className="secondary-button" type="button" onClick={() => finish('waiting')}>先保存，稍后公开发布</button>
-        <button className="main-button" type="button" onClick={() => finish('published')}>我已经公开发布，完成 30 关 →</button>
+        <button className="main-button" type="button" onClick={() => finish('published')}>我已经公开发布，查看四周成果 →</button>
       </div>}
     </div>
   );
@@ -4396,11 +4440,11 @@ function DayWorksheet({
       })}
 
       <div className="single-day-submit">
-        <p>{missingIds.length ? `还有 ${missingIds.length} 项未填写，会标记为待补充。` : '这一关已经填写完整。'}</p>
+        <p>{missingIds.length ? `还有 ${missingIds.length} 项未填写，会标记为待补充。` : '这一步已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          {day.day < 30
-            ? missingIds.length ? `先保存，进入第 ${day.day + 1} 关 →` : `完成本关，进入第 ${day.day + 1} 关 →`
-            : '保存第 30 关，回到总览 →'}
+          {nextVisibleDayNumber(day.day)
+            ? `${missingIds.length ? '先保存' : '完成本步'}，进入 ${getVisibleStep(nextVisibleDayNumber(day.day)!).label} →`
+            : '保存最后一步，查看四周成果 →'}
         </button>
       </div>
     </div>
@@ -4427,13 +4471,13 @@ function PreviewDay({
   return (
     <div className="preview-day">
       <span className="preview-badge">预览 · 未完成</span>
-      <h1>这一关会怎样进行</h1>
+      <h1>这一步会怎样进行</h1>
       {day.day > 7 && <div className="preview-output">完成后会留下：{day.output}</div>}
       <p>你会按下面的顺序完成：</p>
       <ol>
         {labels.map((label, index) => <li key={`${label}-${index}`}>{label}</li>)}
       </ol>
-      <button className="main-button" type="button" onClick={onReturn}>回到第 {currentDay} 关</button>
+      <button className="main-button" type="button" onClick={onReturn}>回到 {getVisibleStep(currentDay).label}</button>
     </div>
   );
 }
@@ -4486,13 +4530,13 @@ function DaySidebar({
   }, [currentDay]);
 
   return (
-    <aside className="day-sidebar" aria-label="30 关导航">
+    <aside className="day-sidebar" aria-label="四周任务导航">
       <header>
         <button type="button" onClick={onHome}>教你如何把才华变成钱</button>
-        <span>{Object.values(completed).filter(Boolean).length} / 30 已推进</span>
+        <span>{visibleDays.filter((day) => completed[String(day.day)]).length} / {visibleDays.length} 已推进</span>
       </header>
       <div className="sidebar-progress" aria-hidden="true">
-        <span style={{ width: `${(Object.values(completed).filter(Boolean).length / 30) * 100}%` }} />
+        <span style={{ width: `${(visibleDays.filter((day) => completed[String(day.day)]).length / visibleDays.length) * 100}%` }} />
       </div>
       <nav ref={navRef}>
         {stages.map((stage) => (
@@ -4501,7 +4545,7 @@ function DaySidebar({
               <span>第{['一', '二', '三', '四'][stage.id - 1]}周</span>
               <strong>{stage.id === 3 ? '与用户产生连接' : stage.shortName}</strong>
             </button>
-            {days.filter((day) => day.stage === stage.id).map((day) => {
+            {visibleDays.filter((day) => day.stage === stage.id).map((day) => {
               const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
               return (
                 <button
@@ -4510,7 +4554,7 @@ function DaySidebar({
                   className={`${day.day === currentDay ? 'is-current ' : ''}${status === '已完成' ? 'is-complete ' : ''}${status.includes('待补充') ? 'is-partial' : ''}`}
                   onClick={() => onSelect(day.day)}
                 >
-                  <span>{String(day.day).padStart(2, '0')}</span>
+                  <span>{getVisibleStep(day.day).label}</span>
                   <strong>{day.title}</strong>
                   <small>{status}</small>
                 </button>
@@ -4546,17 +4590,17 @@ function LevelList({
       <section className="level-panel">
         <header>
           <div>
-            <h2 id="level-list-title">全部 30 关</h2>
+            <h2 id="level-list-title">全部步骤</h2>
             <p>前面的关卡可以随时回来修改，后面的关卡可以先预览。</p>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭关卡列表">关闭</button>
         </header>
         <div className="level-list">
-          {days.map((day) => {
+          {visibleDays.map((day) => {
             const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);
             return (
               <button type="button" key={day.day} onClick={() => onSelect(day.day)}>
-                <span>{String(day.day).padStart(2, '0')}</span>
+                <span>{getVisibleStep(day.day).label}</span>
                 <strong>{day.title}</strong>
                 <small>{status}</small>
               </button>

@@ -851,7 +851,7 @@ select:focus-visible {
 
 .work-title-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
 }
@@ -867,6 +867,26 @@ select:focus-visible {
   margin: 0;
   padding: 12px 15px;
   font-size: 16px;
+}
+
+.delete-work-button {
+  min-height: 54px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: #9b365b;
+  font-weight: 800;
+}
+
+.task-purpose-box {
+  margin-top: 14px;
+  padding: 17px 20px;
+  border-left: 6px solid var(--ink);
+  background: var(--pink);
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.65;
 }
 
 .add-work-button {
@@ -983,7 +1003,7 @@ select:focus-visible {
 .work-evidence-fields {
   margin-top: 16px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -994,11 +1014,13 @@ select:focus-visible {
   font-weight: 850;
 }
 
-.day-content .work-evidence-fields input[type="text"] {
-  min-height: 54px;
+.day-content .work-evidence-fields textarea {
+  min-height: 92px;
   margin: 8px 0 0;
   padding: 12px 14px;
-  font-size: 15px;
+  background: var(--paper-light);
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 .discard-work-button {
@@ -1071,6 +1093,11 @@ select:focus-visible {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.7;
+}
+
+.key-explanation {
+  font-size: 19px;
+  line-height: 1.75;
 }
 
 .feedback-guidance-list li {
@@ -1268,7 +1295,8 @@ select:focus-visible {
   min-height: 110px;
   margin: 0;
   padding: 12px 14px;
-  font-size: 15px;
+  font-size: 17px;
+  line-height: 1.75;
 }
 
 .blank-day-form {
@@ -1296,6 +1324,122 @@ select:focus-visible {
   font-family: var(--serif);
   font-size: 21px;
   line-height: 1.55;
+}
+
+.representative-page-intro {
+  padding: 22px 24px;
+  border: 1px solid var(--ink);
+  border-left: 7px solid var(--pink);
+  background: var(--paper);
+}
+
+.representative-page-intro h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 25px;
+}
+
+.representative-page-intro p {
+  margin: 12px 0 0;
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.representative-picker-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.representative-picker-list > article {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.representative-picker-list > article.is-selected {
+  box-shadow: 5px 5px 0 var(--pink);
+}
+
+.representative-select-button {
+  width: 100%;
+  min-height: 66px;
+  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) max-content;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  background: var(--paper-light);
+  color: var(--ink);
+  text-align: left;
+}
+
+.is-selected > .representative-select-button {
+  background: var(--pink);
+}
+
+.representative-select-button > span {
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.representative-select-button > strong {
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.representative-select-button > small {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.representative-select-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.representative-detail-panel {
+  border-top: 1px solid var(--ink);
+}
+
+.representative-detail-panel summary {
+  padding: 13px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.representative-detail-panel summary::before {
+  content: '＋';
+  margin-right: 8px;
+}
+
+.representative-detail-panel[open] summary::before {
+  content: '−';
+}
+
+.representative-detail-panel > div {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.representative-detail-panel label > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.day-content .representative-detail-panel textarea {
+  min-height: 78px;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--paper-light);
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 .representative-choice-list {
@@ -3288,13 +3432,14 @@ select:focus-visible {
 }
 
 .week-checklist-heading h1 {
-  max-width: 780px;
+  max-width: none;
   margin: 20px 0 0;
   font-family: var(--serif);
-  font-size: clamp(34px, 5vw, 54px);
+  font-size: clamp(34px, 4vw, 52px);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.15;
+  white-space: nowrap;
 }
 
 .week-two-checklist-card .week-checklist-heading h1 {
@@ -4285,6 +4430,10 @@ select:focus-visible {
   .week-two-checklist-card .week-checklist-heading h1 {
     white-space: normal;
   }
+
+  .week-checklist-heading h1 {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 780px) {
@@ -4351,6 +4500,24 @@ select:focus-visible {
 }
 
 @media (max-width: 640px) {
+  .work-title-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .delete-work-button {
+    grid-column: 2;
+    min-height: 42px;
+    justify-self: end;
+  }
+
+  .representative-select-button {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .representative-select-button > small {
+    grid-column: 2;
+  }
+
   .mvp-home {
     padding: 0;
   }

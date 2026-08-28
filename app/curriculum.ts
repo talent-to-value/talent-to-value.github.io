@@ -35,7 +35,7 @@ export type Stage = {
 export const stages: Stage[] = [
   {
     id: 1,
-    range: '01—07',
+    range: '1.1—1.7',
     shortName: '一份清晰的服务说明',
     title: '说清你是谁、帮谁、为什么值钱',
     question: '一个陌生人能不能复述你解决什么问题？',
@@ -43,7 +43,7 @@ export const stages: Stage[] = [
   },
   {
     id: 2,
-    range: '08—14',
+    range: '2.1—2.5',
     shortName: '翻箱子，回答“我为什么信你”',
     title: '整理证据、故事和代表作品',
     question: '别人为什么愿意承担选择你的风险？',
@@ -51,7 +51,7 @@ export const stages: Stage[] = [
   },
   {
     id: 3,
-    range: '15—21',
+    range: '3.1—3.7',
     shortName: '与用户产生连接',
     title: '写出 5 篇说明价值的内容',
     question: '你的内容是否持续指向同一个价值？',
@@ -59,7 +59,7 @@ export const stages: Stage[] = [
   },
   {
     id: 4,
-    range: '22—30',
+    range: '4.1—4.9',
     shortName: '一页购买入口',
     title: '做出一个可以被购买的入口',
     question: '合适的人看完以后，是否知道怎么买？',
@@ -91,7 +91,7 @@ export const days: Day[] = [
     day: 2,
     stage: 1,
     title: '你的客户是什么样的？',
-    principle: '同一种能力可以服务很多人，但不同的人在意的问题、需要的证据和愿意购买的方式都不一样。今天不是确定终身定位，而是为这一次 30 天测试选一个主要客户；后面的痛点、证据、内容和产品都会先围绕这位客户来做。',
+    principle: '同一种能力可以服务很多人，但不同的人在意的问题、需要的证据和愿意购买的方式都不一样。今天不是确定终身定位，而是为这一次测试选一个主要客户；后面的痛点、证据、内容和产品都会先围绕这位客户来做。',
     output: '一组候选客户，以及这一轮先服务的一类人。',
     prep: ['你真实服务过的人', '你愿意长期接触的人', '你已有证据能帮助的人'],
     prompts: [
@@ -152,7 +152,7 @@ export const days: Day[] = [
       {
         id: 'focusProblem',
         label: '选择他们正在遇到的问题',
-        helper: '工具会直接使用 Day 3 的选择，不需要重新输入。',
+        helper: '工具会直接使用 1.3 的选择，不需要重新输入。',
         mode: 'lines',
         targetCount: 1,
       },
@@ -226,7 +226,7 @@ export const days: Day[] = [
     title: '现实演练：发给身边 5 个人，看看他们如何理解',
     principle: '介绍是否清楚，不由你自己判断。不要解释，让别人直接复述，现实反馈才会暴露表达偏差。',
     output: '5 份复述反馈，以及一版按反馈修改的介绍。',
-    prep: ['Day 6 的第一版说明', '5 位不太熟、但愿意说真话的人'],
+    prep: ['1.6 的第一版说明', '5 位不太熟、但愿意说真话的人'],
     prompts: [
       {
         id: 'testers',
@@ -255,7 +255,7 @@ export const days: Day[] = [
   {
     day: 8,
     stage: 2,
-    title: '整理作品证据',
+    title: '建立你的作品与证据清单',
     principle: '证据不是奖章，而是降低陌生人选择风险的台阶。先把做出来过的东西全部找回来。',
     output: '作品清单；每项都标明解决什么、证明什么。',
     prep: ['旧文章、产品、课程、手册', '服务方案、公开分享、可见交付物'],
@@ -272,7 +272,7 @@ export const days: Day[] = [
   {
     day: 9,
     stage: 2,
-    title: '写变化',
+    title: '作品带给你的实际变化',
     principle: '结果不只是大数字。对客户真正有意义的是事情发生了什么具体变化。',
     output: '每项作品带来的具体变化。',
     prep: ['项目复盘', '前后版本', '客户行为或表达发生的变化'],
@@ -309,10 +309,10 @@ export const days: Day[] = [
   {
     day: 11,
     stage: 2,
-    title: '整理认知变化，证明你的判断能力',
-    principle: '从做过的事情中提炼认知变化，让别人知道你的判断从哪里来。',
-    output: '一组能够证明判断来源的认知变化。',
-    prep: ['职业变化、作品经历、失败或转折', 'Day 8–10 的证据材料'],
+    title: '你由此形成了什么判断',
+    principle: '从做过的事情中提炼判断，让别人知道你的判断从哪里来。',
+    output: '一组能够说明判断来源的经验总结。',
+    prep: ['职业变化、作品经历、失败或转折', '2.1–2.3 的证据材料'],
     prompts: [
       {
         id: 'stories',
@@ -321,7 +321,7 @@ export const days: Day[] = [
         mode: 'long',
       },
     ],
-    checks: ['写出了认知变化', '每段只有一个判断', '没有写成长篇自传'],
+    checks: ['写出了经验带来的判断', '每段只有一个判断', '没有写成长篇自传'],
     sourcePages: '262',
   },
   {
@@ -341,7 +341,7 @@ export const days: Day[] = [
     title: '选出代表作品，写一页“为什么能信我”',
     principle: '证据不是越多越好，而是越相关越有力。只保留最能支持当前主问题的作品。',
     output: '1–3 个代表作品，以及一页“为什么能信我”。',
-    prep: ['Day 8 的作品清单', 'Day 1–7 确定的当前主问题'],
+    prep: ['2.1 的作品清单', '第一周确定的当前主问题'],
     prompts: [
       {
         id: 'representativeWorks',
@@ -362,9 +362,9 @@ export const days: Day[] = [
   {
     day: 14,
     stage: 2,
-    title: '已合并到第 13 关',
+    title: '已合并到 2.5',
     principle: '第 13 天已经同时完成代表作品和信任说明。',
-    output: '沿用第 13 关生成的信任说明。',
+    output: '沿用 2.5 生成的信任说明。',
     prep: [],
     prompts: [],
     checks: [],
@@ -410,7 +410,7 @@ export const days: Day[] = [
     title: '写故事型内容',
     principle: '故事的任务不是让人了解你的全部，而是让人知道一个判断从哪里来。',
     output: '一篇由经历落到判断的故事型内容。',
-    prep: ['Day 11 的 5 段故事', '与当前主问题最相关的一段'],
+    prep: ['2.4 整理出的判断', '与当前主问题最相关的一段'],
     prompts: [
       { id: 'storyTitle', label: '标题', mode: 'text' },
       { id: 'storyBefore', label: '第一段：写“我以前……”', mode: 'long' },
@@ -463,7 +463,7 @@ export const days: Day[] = [
     title: '统一检查 5 篇内容',
     principle: '五篇内容不是为了凑齐五个类型，而是共同把你和一个问题连接起来。跑偏的内容要舍得删。',
     output: '一份跨内容检查结果，以及需要重写的清单。',
-    prep: ['Day 15–19 的五篇初稿'],
+    prep: ['3.1–3.5 的五篇初稿'],
     prompts: [
       {
         id: 'contentAudit',
@@ -521,7 +521,7 @@ export const days: Day[] = [
     title: '谁适合，谁不适合？',
     principle: '购买入口的第一屏先筛选匹配。边界不是赶走客户，而是减少错配，让交付更稳定。',
     output: '清楚的适合人群与不适合人群。',
-    prep: ['Day 22 的最小产品', '你最能帮助的人', '你不提供的需求类型'],
+    prep: ['4.1 的最小产品', '你最能帮助的人', '你不提供的需求类型'],
     prompts: [
       { id: 'fitAudience', label: '适合谁', placeholder: '适合……', mode: 'long' },
       { id: 'notFitAudience', label: '不适合谁', placeholder: '不适合……', mode: 'long' },
@@ -583,7 +583,7 @@ export const days: Day[] = [
     title: '把购买入口拼出来',
     principle: '购买页不需要证据仓库，只需要最相关的几条。每条都要替读者解释：它为什么与这次选择有关。',
     output: '一组经过筛选并解释过的购买证据。',
-    prep: ['Day 8–14 的证据、故事和代表作品'],
+    prep: ['第二周整理的证据、判断和代表作品'],
     prompts: [
       {
         id: 'offerEvidence',
