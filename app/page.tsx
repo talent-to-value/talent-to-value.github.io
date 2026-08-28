@@ -1092,9 +1092,8 @@ export default function Home() {
   }, [levelsOpen]);
 
   const navigateToDay = (dayNumber: number) => {
-    const isFuturePreview = dayNumber > firstIncomplete && !completed[String(dayNumber)];
     setCurrentDay(dayNumber);
-    setPreviewMode(isFuturePreview);
+    setPreviewMode(false);
     setLevelsOpen(false);
     setView('day');
     window.scrollTo({ top: 0 });
@@ -1140,12 +1139,10 @@ export default function Home() {
                         ? 13
                         : currentDay === 13 && ['representativeWorks', 'representativeWorkDrafts', 'notPromise', 'canHelp', 'trustPage'].includes(id) && previousValue !== value
                           ? 15
-                          : currentDay >= 15 && currentDay <= 19 && previousValue !== value
-                            ? currentDay + 1
-                            : currentDay === 20 && previousValue !== value
-                              ? 21
-                              : currentDay >= 22 && currentDay <= 29 && previousValue !== value
-                                ? currentDay + 1
+                          : currentDay === 20 && previousValue !== value
+                            ? 21
+                            : currentDay >= 22 && currentDay <= 29 && previousValue !== value
+                              ? currentDay + 1
                               : null;
     const dependentSelectionWillBeEmpty =
       (currentDay === 3
@@ -1282,8 +1279,7 @@ export default function Home() {
       setView('day');
     } else if (currentDay < 30) {
       const nextVisibleDay = nextVisibleDayNumber(currentDay) ?? 30;
-      const nextDay = currentDay > firstIncomplete ? firstIncomplete : nextVisibleDay;
-      setCurrentDay(nextDay);
+      setCurrentDay(nextVisibleDay);
       setPreviewMode(false);
       setView('day');
     } else {
