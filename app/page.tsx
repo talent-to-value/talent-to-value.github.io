@@ -3814,14 +3814,12 @@ ${articles}`;
         <span className="task-number">03</span>
         <div>
           <div className="audit-final-heading">
-            <div>
-              <h2>最终版保存</h2>
-              <p>在这里优化出最终版，可以利用 AI 来优化。</p>
-            </div>
+            <h2>最终版保存</h2>
             <button className="secondary-button refresh-previous-button" type="button" onClick={refreshFromPrevious}>
               重新获取前序数据 <span aria-hidden="true">↻</span>
             </button>
           </div>
+          <p className="audit-final-note">在这里优化出最终版，可以利用 AI 来优化。</p>
           <div className="audit-final-article-list">
             {finalArticles.map((article) => (
               <article className="audit-final-article" key={article.dayNumber}>
