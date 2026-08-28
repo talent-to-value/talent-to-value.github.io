@@ -1229,6 +1229,17 @@ select:focus-visible {
   line-height: 1.5;
 }
 
+.cognition-formula span {
+  margin-right: 8px;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.cognition-formula strong {
+  font-weight: 800;
+}
+
 .cognition-formula.compact-formula {
   font-size: 18px;
 }
@@ -1328,9 +1339,8 @@ select:focus-visible {
 
 .representative-page-intro {
   padding: 22px 24px;
-  border: 1px solid var(--ink);
   border-left: 7px solid var(--pink);
-  background: var(--paper);
+  background: rgba(231, 155, 179, 0.22);
 }
 
 .representative-page-intro h2 {
@@ -1341,8 +1351,32 @@ select:focus-visible {
 
 .representative-page-intro p {
   margin: 12px 0 0;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.75;
+}
+
+.representative-selected-problem {
+  margin: 16px 0 14px;
+  padding: 18px 20px;
+  border-left: 6px solid var(--pink);
+  background: rgba(231, 155, 179, 0.22);
+}
+
+.representative-selected-problem span,
+.representative-selected-problem strong {
+  display: block;
+}
+
+.representative-selected-problem span {
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.representative-selected-problem strong {
+  margin-top: 8px;
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1.55;
 }
 
 .representative-picker-list {

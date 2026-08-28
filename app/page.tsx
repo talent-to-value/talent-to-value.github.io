@@ -1581,13 +1581,13 @@ export default function Home() {
           <h1>恭喜你完成了第二周的任务</h1>
           <div className="next-week-preview">
             <strong>第三周计划</strong>
-            <p>这一周我们将回答用户“<b>你看见了什么问题，又能给我什么帮助？</b>”的问题，结束后你将获得：</p>
+            <p>这一周我们将创作五篇内容，来回答用户“<b>你看见了什么问题，又能给我什么帮助？</b>”的问题。结束后你将获得：</p>
             <ul>
-              <li>1 篇问题型内容：<b>让读者觉得“这说的就是我”</b></li>
-              <li>1 篇判断型内容：让读者知道当你<b>遇到这件事，你会怎么选</b></li>
-              <li>1 篇故事型内容：<b>让读者知道你的判断从哪里来</b></li>
-              <li>1 篇证据型内容：<b>让读者相信你不是只会说，你真的做过</b></li>
-              <li>1 篇产品入口型内容：<b>让读者知道怎么买你</b></li>
+              <li>1 篇问题型内容：让读者觉得“这说的就是我”</li>
+              <li>1 篇判断型内容：让读者知道当你遇到这件事，你会怎么选</li>
+              <li>1 篇故事型内容：让读者知道你的判断从哪里来</li>
+              <li>1 篇证据型内容：让读者相信你不是只会说，你真的做过</li>
+              <li>1 篇产品入口型内容：让读者知道怎么买你</li>
             </ul>
           </div>
           <button className="main-button next-week-button" type="button" onClick={() => navigateToDay(15)}>
@@ -1746,7 +1746,7 @@ export default function Home() {
               />
             ) : currentDay === 21 ? (
               <DayTwentyOnePublishPage
-                buttonLabel={previewMode ? `返回 ${getVisibleStep(firstIncomplete).label}` : '完成发布与调整，查看第三周总结 →'}
+                buttonLabel={previewMode ? `返回 ${getVisibleStep(firstIncomplete).label}` : '进入下一关 →'}
                 onSubmit={() => {
                   if (previewMode) navigateToDay(firstIncomplete);
                   else finishThirdWeek();
@@ -1958,7 +1958,7 @@ function DayOneSinglePage({
       <div className="single-day-submit">
         <p>{partial ? '没填完也可以继续；未完成的部分会标记为待补充。' : '这一关已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={onSubmit}>
-          {partial ? '先保存，进入 1.2 →' : '完成本关，进入 1.2 →'}
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2040,7 +2040,7 @@ function DayTwoSinglePage({
       <div className="single-day-submit">
         <p>{hasDirection ? '之后的练习会先围绕这类人展开，随时可以回来修改。' : '暂时不确定也可以继续，这一关会标记为待补充。'}</p>
         <button className="main-button" type="button" onClick={onSubmit}>
-          {hasDirection ? '就先服务这类人，进入 1.3 →' : '暂时不确定，进入 1.3 →'}
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2131,7 +2131,7 @@ function DayThreeSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? '暂时没写完也可以继续，这一关会标记为待补充。' : '已选出这一轮最值得解决的卡点。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          完成本关，进入 1.4 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2307,7 +2307,7 @@ function DayFourSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? `还有 ${missingIds.length} 项未确定，会标记为待补充。` : '这一关已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          {missingIds.length ? '先保存，进入 1.5 →' : '完成本关，进入 1.5 →'}
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2398,7 +2398,7 @@ function DayFiveSinglePage({
       <div className="single-day-submit">
         <p>{missingIds.length ? '没写完也可以继续，这一关会标记为待补充。' : '你的服务现在有了一句可以被验证的实力证据。'}</p>
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          保存证据，进入 1.6 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2648,7 +2648,7 @@ function DaySixSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          保存服务说明，进入 1.7 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -2860,7 +2860,7 @@ function DaySevenSinglePage({
 
       <div className="single-day-submit submit-only week-finish-submit">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          这一关完成，我已收获一份可用的服务说明
+          第一周完成 →
         </button>
       </div>
     </div>
@@ -3024,7 +3024,7 @@ function DayEightSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={saveAndContinue}>
-          保存，进入 2.2 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3098,7 +3098,7 @@ function DayNineSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missing ? ['resultEvidence'] : [])}>
-          保存，进入 2.3 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3211,7 +3211,7 @@ function DayTenSinglePage({
           后续我会继续补充反馈
         </button>
         <button className="main-button" type="button" disabled={!hasFeedback} onClick={() => onSubmit('complete', [])}>
-          已完成反馈，进入 2.4 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3254,7 +3254,7 @@ function DayElevenSinglePage({
         <div>
           <h2>从具体事情里，提炼你的判断</h2>
           <p className="key-explanation">前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
-          <div className="cognition-formula">我以前……后来我发现……所以我现在……</div>
+          <div className="cognition-formula"><span>句式是：</span><strong>“我以前……后来我发现……所以我现在……”</strong></div>
           <h3 className="example-section-title">下方是两个示例</h3>
 
           <div className="cognition-example-list">
@@ -3276,7 +3276,7 @@ function DayElevenSinglePage({
         <span className="task-number">02</span>
         <div>
           <h2>接下来开始写吧</h2>
-          <div className="cognition-formula compact-formula">我以前……后来我发现……所以我现在……</div>
+          <div className="cognition-formula compact-formula"><span>句式是：</span><strong>“我以前……后来我发现……所以我现在……”</strong></div>
           <div className="cognition-entry-list">
             {records.map((record, index) => (
               <div className="cognition-entry-row" key={record.id}>
@@ -3313,7 +3313,7 @@ function DayElevenSinglePage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(hasCognition ? [] : ['stories'])}>
-          保存，进入 2.5 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3428,15 +3428,14 @@ function DayThirteenCombinedPage({
         <p>把前面整理的作品、实际变化和判断合在一起，再补充你的能力边界，生成一份让客户看懂“为什么可以信你”的说明。</p>
       </section>
 
-      <section className="current-problem-panel">
-        <span>你现在要解决什么问题：</span>
-        <strong>{mainProblem || '第一周还没有选定唯一的问题'}</strong>
-      </section>
-
       <section className="single-task-block">
         <span className="task-number">01</span>
         <div>
-          <h2>选出与这个问题最相关的代表作品</h2>
+          <h2>选出与「你要解决的问题」最相关的代表作品</h2>
+          <div className="representative-selected-problem">
+            <span>你选择解决的问题是：</span>
+            <strong>{mainProblem || '第一周还没有选定唯一的问题'}</strong>
+          </div>
           <p>从已有作品中选 1–3 个。这里主要做选择；需要确认或修改时，再展开作品详情。</p>
           <div className="representative-picker-list">
             {works.length ? works.map((work) => {
@@ -3538,7 +3537,7 @@ function DayThirteenCombinedPage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          保存，查看第二周总结 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3568,8 +3567,6 @@ function ThirdWeekWritingPage({
       answers[keyFor(dayNumber, section.id)]?.trim() ? '' : section.id
     )),
   ].filter(Boolean);
-  const nextDay = nextVisibleDayNumber(dayNumber);
-
   return (
     <div className="single-day-form third-week-writing-form">
       <section className="single-task-block content-writing-guide">
@@ -3628,9 +3625,7 @@ function ThirdWeekWritingPage({
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          {previewMode
-            ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →`
-            : nextDay ? `保存，进入 ${getVisibleStep(nextDay).label} →` : '保存 →'}
+          {previewMode ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →` : '进入下一关 →'}
         </button>
       </div>
     </div>
@@ -3791,7 +3786,7 @@ ${articles}`;
 
       <div className="single-day-submit submit-only">
         <button className="main-button" type="button" onClick={finishAudit}>
-          我已完成检查，进入 3.7 →
+          进入下一关 →
         </button>
       </div>
     </div>
@@ -3921,10 +3916,9 @@ function FourthWeekPage({
   const startAction = getAnswer(27, 'startAction');
   const purchasePageDraft = getAnswer(27, 'purchasePageDraft');
   const purchasePageFinal = firstFilled(getAnswer(29, 'purchasePageFinal'), purchasePageDraft);
-  const nextVisibleDay = nextVisibleDayNumber(dayNumber);
   const nextButtonLabel = previewMode
     ? `返回 ${getVisibleStep(firstIncomplete).label}`
-    : nextVisibleDay ? `保存，进入 ${getVisibleStep(nextVisibleDay).label} →` : '保存 →';
+    : '进入下一关 →';
   const works = parseWorkEvidence(
     getAnswer(8, 'workEvidence'),
     getAnswer(8, 'works'),
@@ -4200,8 +4194,8 @@ function FourthWeekPage({
           {records.length < 5 && <button className="linked-add-button" type="button" onClick={() => saveRecords([...records, { id: nextRecordId('buyer', records), name: '', feedback: '' }])}><span aria-hidden="true">＋</span> 添加一个测试对象</button>}
         </div></section>
         {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => submit([])}>{nextButtonLabel}</button></div> : <div className="single-day-submit feedback-submit-actions">
-          <button className="secondary-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'waiting'); submit(['purchaseResults']); }}>等待反馈，先进入 4.8</button>
-          <button className="main-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'complete'); submit(hasFeedback ? [] : ['purchaseResults']); }}>保存反馈，进入 4.8 →</button>
+          <button className="secondary-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'waiting'); submit(['purchaseResults']); }}>等待反馈，稍后补充</button>
+          <button className="main-button" type="button" onClick={() => { onAnswer('buyerTestStatus', 'complete'); submit(hasFeedback ? [] : ['purchaseResults']); }}>进入下一关 →</button>
         </div>}
       </div>
     );
@@ -4297,7 +4291,7 @@ function FourthWeekPage({
       </details>
       {previewMode ? <div className="single-day-submit submit-only"><button className="main-button" type="button" onClick={() => onSubmit([])}>{`返回 ${getVisibleStep(firstIncomplete).label}`}</button></div> : <div className="single-day-submit feedback-submit-actions">
         <button className="secondary-button" type="button" onClick={() => finish('waiting')}>先保存，稍后公开发布</button>
-        <button className="main-button" type="button" onClick={() => finish('published')}>我已经公开发布，查看四周成果 →</button>
+        <button className="main-button" type="button" onClick={() => finish('published')}>进入下一关 →</button>
       </div>}
     </div>
   );
@@ -4442,9 +4436,7 @@ function DayWorksheet({
       <div className="single-day-submit">
         <p>{missingIds.length ? `还有 ${missingIds.length} 项未填写，会标记为待补充。` : '这一步已经填写完整。'}</p>
         <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
-          {nextVisibleDayNumber(day.day)
-            ? `${missingIds.length ? '先保存' : '完成本步'}，进入 ${getVisibleStep(nextVisibleDayNumber(day.day)!).label} →`
-            : '保存最后一步，查看四周成果 →'}
+          进入下一关 →
         </button>
       </div>
     </div>
