@@ -2440,6 +2440,119 @@ function StructuredServiceStatement({
   );
 }
 
+function parseStructuredServiceStatement(
+  text: string,
+  fallback: { valueLine: string; fitAudience: string; problems: string[]; evidence: string },
+) {
+  if (!text.trim()) return fallback;
+  const lines = text.split('\n').map((line) => line.trim());
+  const fitIndex = lines.findIndex((line) => /^适合[：:]/.test(line));
+  const problemIndex = lines.findIndex((line) => /^常见卡点[：:]/.test(line));
+  if (fitIndex < 0 || problemIndex < 0 || problemIndex <= fitIndex) return fallback;
+
+  const valueLine = lines.slice(0, fitIndex).filter(Boolean).join(' ') || fallback.valueLine;
+  const fitLead = lines[fitIndex].replace(/^适合[：:]\s*/, '');
+  const fitAudience = [fitLead, ...lines.slice(fitIndex + 1, problemIndex)]
+    .filter(Boolean)
+    .join(' ') || fallback.fitAudience;
+  const inlineProblems = lines[problemIndex].replace(/^常见卡点[：:]\s*/, '');
+  const problemLines: string[] = inlineProblems
+    ? inlineProblems.split(/[；;、]/).map((item) => item.trim()).filter(Boolean)
+    : [];
+  const evidenceLines: string[] = [];
+  let reachedEvidence = false;
+  lines.slice(problemIndex + 1).forEach((line) => {
+    if (!line) return;
+    if (!reachedEvidence && /^[·•*-]\s*/.test(line)) {
+      problemLines.push(line.replace(/^[·•*-]\s*/, '').trim());
+      return;
+    }
+    reachedEvidence = true;
+    evidenceLines.push(line);
+  });
+
+  return {
+    valueLine,
+    fitAudience,
+    problems: problemLines.length ? problemLines.slice(0, 3) : fallback.problems,
+    evidence: evidenceLines.join(' ') || fallback.evidence,
+  };
+}
+
+function formatStructuredServiceStatement({
+  valueLine,
+  fitAudience,
+  problems,
+  evidence,
+}: {
+  valueLine: string;
+  fitAudience: string;
+  problems: string[];
+  evidence: string;
+}) {
+  return [
+    valueLine.trim(),
+    fitAudience.trim() ? `适合：${fitAudience.trim()}` : '',
+    problems.length ? `常见卡点：\n${problems.map((problem) => `· ${problem}`).join('\n')}` : '',
+    evidence.trim(),
+  ].filter(Boolean).join('\n\n');
+}
+
+function StructuredServiceStatementEditor({
+  valueLine,
+  fitAudience,
+  problems,
+  evidence,
+  onAnswer,
+}: {
+  valueLine: string;
+  fitAudience: string;
+  problems: string[];
+  evidence: string;
+  onAnswer: (id: string, value: string) => void;
+}) {
+  const problemValues = Array.from({ length: 3 }, (_, index) => problems[index] ?? '');
+  return (
+    <div className="structured-statement structured-statement-editor">
+      <AutoGrowTextarea
+        className="statement-value-editor"
+        value={valueLine}
+        aria-label="编辑服务介绍"
+        onChange={(event) => onAnswer('statementValue', event.target.value)}
+      />
+      <div className="statement-detail-row">
+        <strong>适合：</strong>
+        <AutoGrowTextarea
+          value={fitAudience}
+          aria-label="编辑适合的人"
+          onChange={(event) => onAnswer('statementFit', event.target.value)}
+        />
+      </div>
+      <div className="statement-detail-row statement-problem-row">
+        <strong>常见卡点：</strong>
+        <div className="statement-problem-editor-list">
+          {problemValues.map((problem, index) => (
+            <input
+              type="text"
+              value={problem}
+              aria-label={`编辑常见卡点 ${index + 1}`}
+              placeholder={`常见卡点 ${index + 1}`}
+              key={`statement-editor-problem-${index + 1}`}
+              onChange={(event) => onAnswer(`statementProblem${index + 1}`, event.target.value)}
+            />
+          ))}
+        </div>
+      </div>
+      <AutoGrowTextarea
+        className="statement-evidence-editor"
+        value={evidence}
+        aria-label="编辑为什么是你"
+        onChange={(event) => onAnswer('statementEvidence', event.target.value)}
+      />
+    </div>
+  );
+}
+
 function DaySixSinglePage({
   answers,
   onAnswer,
@@ -2449,8 +2562,6 @@ function DaySixSinglePage({
   onAnswer: (id: string, value: string) => void;
   onSubmit: (missingIds: string[]) => void;
 }) {
-  const [optimizing, setOptimizing] = useState(false);
-  const [optimizeError, setOptimizeError] = useState('');
   const [editingStatement, setEditingStatement] = useState(false);
   const earlierProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
   const latestValueLine = answers[keyFor(4, 'selectedValue')]
@@ -2471,14 +2582,17 @@ function DaySixSinglePage({
     || latestEvidence;
   const optimizedStatement = answers[keyFor(6, 'optimizedStatement')] ?? '';
   const filledProblems = problemValues.map((item) => item.trim()).filter(Boolean);
-  const assembled = [
-    valueLine.trim(),
-    fitAudience.trim() ? `适合：${fitAudience.trim()}` : '',
-    filledProblems.length ? `常见卡点：\n${filledProblems.map((problem) => `· ${problem}`).join('\n')}` : '',
-    evidence.trim(),
-  ].filter(Boolean).join('\n\n');
-  const displayedStatement = optimizedStatement.trim() || assembled;
-  const complete = Boolean(valueLine.trim() && fitAudience.trim() && filledProblems.length && evidence.trim());
+  const baseStatement = { valueLine, fitAudience, problems: filledProblems, evidence };
+  const visibleStatement = optimizedStatement.trim()
+    ? parseStructuredServiceStatement(optimizedStatement, baseStatement)
+    : baseStatement;
+  const displayedStatement = formatStructuredServiceStatement(visibleStatement);
+  const complete = Boolean(
+    visibleStatement.valueLine.trim()
+    && visibleStatement.fitAudience.trim()
+    && visibleStatement.problems.length
+    && visibleStatement.evidence.trim(),
+  );
 
   const refreshFromPrevious = () => {
     onAnswer('statementValue', latestValueLine);
@@ -2490,43 +2604,13 @@ function DaySixSinglePage({
     setEditingStatement(false);
   };
 
-  const optimizeStatement = async () => {
-    if (!assembled.trim() || optimizing) return;
-    setOptimizing(true);
-    setOptimizeError('');
-    try {
-      const response = await fetch('/api/optimize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          draft: assembled,
-          context: {
-            audience: answers[keyFor(2, 'selectedAudience')] ?? fitAudience,
-            mainProblem: answers[keyFor(4, 'focusProblem')] ?? filledProblems[0] ?? '',
-            outcome: answers[keyFor(4, 'valueOutcome')] ?? '',
-            suitableFor: fitAudience,
-            commonProblems: filledProblems,
-            evidence,
-          },
-        }),
-      });
-      const result = await response.json() as { optimized?: string; error?: string };
-      if (!response.ok || !result.optimized?.trim()) {
-        throw new Error(result.error || '暂时无法优化，请稍后再试。');
-      }
-      onAnswer('optimizedStatement', result.optimized.trim());
-    } catch (error) {
-      setOptimizeError(error instanceof Error ? error.message : '暂时无法优化，请稍后再试。');
-    } finally {
-      setOptimizing(false);
-    }
-  };
-
   const saveAndContinue = () => {
-    onAnswer('statementValue', valueLine);
-    onAnswer('statementFit', fitAudience);
-    problemValues.forEach((problem, index) => onAnswer(`statementProblem${index + 1}`, problem));
-    onAnswer('statementEvidence', evidence);
+    onAnswer('statementValue', visibleStatement.valueLine);
+    onAnswer('statementFit', visibleStatement.fitAudience);
+    Array.from({ length: 3 }, (_, index) => visibleStatement.problems[index] ?? '')
+      .forEach((problem, index) => onAnswer(`statementProblem${index + 1}`, problem));
+    onAnswer('statementEvidence', visibleStatement.evidence);
+    onAnswer('optimizedStatement', '');
     onAnswer('firstStatement', displayedStatement);
     onSubmit(complete ? [] : ['firstStatement']);
   };
@@ -2601,48 +2685,42 @@ function DaySixSinglePage({
         <h2>你的服务说明</h2>
         <div className="assembly-preview">
           {editingStatement ? (
-            <AutoGrowTextarea
-              className="statement-result-editor"
-              value={displayedStatement}
-              aria-label="编辑你的服务说明"
-              autoFocus
-              onChange={(event) => onAnswer('optimizedStatement', event.target.value)}
-            />
-          ) : optimizedStatement.trim() ? (
-            <p>{optimizedStatement}</p>
-          ) : (
-            <StructuredServiceStatement
+            <StructuredServiceStatementEditor
               valueLine={valueLine}
               fitAudience={fitAudience}
               problems={filledProblems}
               evidence={evidence}
+              onAnswer={onAnswer}
+            />
+          ) : (
+            <StructuredServiceStatement
+              valueLine={visibleStatement.valueLine}
+              fitAudience={visibleStatement.fitAudience}
+              problems={visibleStatement.problems}
+              evidence={visibleStatement.evidence}
             />
           )}
           <span>{displayedStatement.length} 字</span>
         </div>
-        <div className="optimize-actions">
-          <button
-            className="secondary-button optimize-button"
-            type="button"
-            disabled={!assembled.trim() || optimizing}
-            onClick={optimizeStatement}
-          >
-            {optimizing ? '正在优化…' : '不通顺？点击优化 →'}
-          </button>
+        <div className="statement-edit-actions">
           <button
             className="secondary-button edit-statement-button"
             type="button"
             disabled={!displayedStatement.trim()}
             onClick={() => {
-              if (!editingStatement && !optimizedStatement.trim()) {
-                onAnswer('optimizedStatement', displayedStatement);
+              if (!editingStatement && optimizedStatement.trim()) {
+                onAnswer('statementValue', visibleStatement.valueLine);
+                onAnswer('statementFit', visibleStatement.fitAudience);
+                Array.from({ length: 3 }, (_, index) => visibleStatement.problems[index] ?? '')
+                  .forEach((problem, index) => onAnswer(`statementProblem${index + 1}`, problem));
+                onAnswer('statementEvidence', visibleStatement.evidence);
+                onAnswer('optimizedStatement', '');
               }
               setEditingStatement((previous) => !previous);
             }}
           >
             {editingStatement ? '完成编辑' : '编辑'}
           </button>
-          {optimizeError && <p role="alert">{optimizeError}</p>}
         </div>
       </section>
 

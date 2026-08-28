@@ -3313,6 +3313,40 @@ select:focus-visible {
   line-height: 1.75;
 }
 
+.structured-statement-editor .statement-value-editor,
+.structured-statement-editor .statement-evidence-editor,
+.structured-statement-editor .statement-detail-row textarea,
+.structured-statement-editor .statement-detail-row input[type="text"] {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.structured-statement-editor .statement-value-editor {
+  min-height: 96px;
+  padding: 14px 16px;
+}
+
+.structured-statement-editor .statement-detail-row textarea {
+  min-height: 74px;
+}
+
+.statement-problem-editor-list {
+  display: grid;
+  gap: 9px;
+}
+
+.structured-statement-editor .statement-evidence-editor {
+  min-height: 96px;
+  margin-top: 20px;
+}
+
 .assembly-preview > span {
   position: absolute;
   right: 16px;
@@ -3321,7 +3355,7 @@ select:focus-visible {
   font-weight: 800;
 }
 
-.optimize-actions {
+.statement-edit-actions {
   margin-top: 16px;
   display: flex;
   align-items: center;
@@ -3330,20 +3364,10 @@ select:focus-visible {
   gap: 10px;
 }
 
-.optimize-actions .secondary-button {
+.statement-edit-actions .secondary-button {
   min-width: 230px;
 }
 
-.optimize-actions p {
-  flex-basis: 100%;
-  margin: 0;
-  color: #9b365b;
-  font-size: 13px;
-  line-height: 1.6;
-  text-align: center;
-}
-
-.optimize-button:disabled,
 .edit-statement-button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
@@ -5241,14 +5265,14 @@ select:focus-visible {
   }
 
   .week-checklist-actions,
-  .optimize-actions {
+  .statement-edit-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
   .week-checklist-actions .main-button,
   .week-checklist-actions .secondary-button,
-  .optimize-actions .secondary-button {
+  .statement-edit-actions .secondary-button {
     width: 100%;
     min-width: 0;
   }
