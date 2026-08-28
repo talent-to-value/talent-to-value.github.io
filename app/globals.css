@@ -2376,6 +2376,11 @@ select:focus-visible {
   font-weight: 850;
 }
 
+.day-three-form .answer-row > span,
+.day-four-form .answer-row > span {
+  font-size: 16px;
+}
+
 .answer-row > strong {
   overflow-wrap: anywhere;
   font-family: var(--serif);
@@ -2432,6 +2437,58 @@ select:focus-visible {
   font-size: 16px;
   font-weight: 650;
   line-height: 1.7;
+}
+
+.day-four-form .sentence-formula {
+  width: 100%;
+  margin: 18px 0 20px;
+  padding: 22px 20px;
+  border-left: 0;
+  background: var(--pink);
+}
+
+.day-four-form .sentence-formula span {
+  color: var(--ink);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.day-four-form .sentence-formula p {
+  margin-top: 12px;
+  text-align: center;
+  font-size: clamp(19px, 2.1vw, 25px);
+  font-weight: 800;
+}
+
+.value-sentence-inputs {
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.value-sentence-inputs label {
+  margin: 0 !important;
+}
+
+.value-sentence-inputs label > span:first-child {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.value-sentence-inputs .full-select,
+.value-sentence-inputs input[type="text"] {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 8px;
+}
+
+.day-content .candidate-draft-textarea {
+  min-height: 64px;
+  height: 64px;
+  padding: 16px;
 }
 
 .center-action {
@@ -2494,21 +2551,74 @@ select:focus-visible {
   font-weight: 900;
 }
 
-.introduction-candidate > strong {
+.introduction-candidate.selected {
+  border-color: var(--ink);
+  background: var(--pink);
+}
+
+.candidate-select-button {
+  min-width: 0;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.candidate-select-button strong {
   overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.65;
 }
 
-.introduction-candidate > small {
+.candidate-select-button small {
   color: var(--muted);
   font-size: 11px;
   font-weight: 800;
 }
 
-.introduction-candidate.selected {
-  border-color: var(--ink);
-  background: var(--pink);
+.candidate-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.candidate-actions button {
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.introduction-candidate > input[type="text"] {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper-light);
+}
+
+.introduction-candidate.removed {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  opacity: 0.62;
+}
+
+.introduction-candidate.removed .candidate-select-button strong {
+  text-decoration: line-through;
+}
+
+.introduction-candidate.removed .candidate-actions button {
+  border-color: var(--muted);
+  color: var(--muted);
 }
 
 .evidence-builder {
@@ -2681,6 +2791,10 @@ select:focus-visible {
 
 .assembly-intro {
   padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
   background: var(--pink);
 }
 
@@ -2696,6 +2810,12 @@ select:focus-visible {
   font-size: 14px;
   font-weight: 700;
   line-height: 1.7;
+}
+
+.refresh-previous-button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  background: var(--paper-light);
 }
 
 .day-six-part > div {
@@ -4489,12 +4609,25 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .value-sentence-inputs {
+    grid-template-columns: 1fr;
+  }
+
   .introduction-candidate {
     grid-template-columns: 30px minmax(0, 1fr);
   }
 
-  .introduction-candidate > small {
+  .candidate-actions {
     grid-column: 2;
+  }
+
+  .assembly-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .refresh-previous-button {
+    width: 100%;
   }
 
   .feedback-record {

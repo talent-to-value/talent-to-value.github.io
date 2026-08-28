@@ -60,7 +60,7 @@ export const stages: Stage[] = [
   {
     id: 4,
     range: '22—30',
-    shortName: '一页可以购买的入口',
+    shortName: '一页购买入口',
     title: '做出一个可以被购买的入口',
     question: '合适的人看完以后，是否知道怎么买？',
     output: '一个可交付、可定价、可购买的最小产品',

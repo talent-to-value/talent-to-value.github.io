@@ -1401,7 +1401,7 @@ export default function Home() {
                     <span>0{stage.id}</span>
                     <small>{weekLabels[stage.id - 1]}</small>
                   </div>
-                  <h2>{stage.shortName}</h2>
+                  <h2>{stage.id === 1 ? <>一份清晰的服务<br />说明</> : stage.shortName}</h2>
                   <p>{stage.title}</p>
                 </article>
               );
@@ -1884,7 +1884,7 @@ function DayOneSinglePage({
         <span className="task-number">02</span>
         <div>
           <h2>请站在别人的视角看看</h2>
-          <p>注释：需要猜或者追问，就要选“不清楚”</p>
+          <p>注：需要猜或者追问，就要选“不清楚”</p>
           <div className="clarity-list">
             {clarityQuestions.map((question, index) => {
               const value = answers[keyFor(1, question.id)] ?? '';
@@ -2030,7 +2030,7 @@ function DayThreeSinglePage({
     <div className="single-day-form day-three-form">
       {audience && (
         <div className="answer-row compact-answer-row">
-          <span>你正在代入的客户</span>
+          <span>最想服务的客户是：</span>
           <strong>{audience}</strong>
         </div>
       )}
@@ -2111,26 +2111,80 @@ function DayFourSinglePage({
   const focusProblem = storedProblem || (problemOptions.length === 1 ? problemOptions[0] : '');
   const outcome = answers[keyFor(4, 'valueOutcome')] ?? '';
   const versions = uniqueLines(answers[keyFor(4, 'valueVersions')] ?? '');
+  const removedVersions = uniqueLines(answers[keyFor(4, 'removedValueVersions')] ?? '')
+    .filter((version) => versions.includes(version));
   const selectedValue = answers[keyFor(4, 'selectedValue')] ?? '';
-  const draft = answers[keyFor(4, 'generatedDraft')] ?? selectedValue;
+  const [editingCandidate, setEditingCandidate] = useState('');
+  const [candidateEdit, setCandidateEdit] = useState('');
   const canGenerate = Boolean(audience.trim() && focusProblem.trim() && outcome.trim());
+  const generatedSentence = canGenerate
+    ? `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${outcome.trim()}。`
+    : '';
+  const draft = answers[keyFor(4, 'generatedDraft')] || generatedSentence || selectedValue;
+  const activeVersions = versions.filter((version) => !removedVersions.includes(version));
+  const orderedVersions = [
+    ...activeVersions,
+    ...versions.filter((version) => removedVersions.includes(version)),
+  ];
+  const draftIsRemoved = removedVersions.includes(draft.trim());
+  const draftIsActive = versions.includes(draft.trim()) && !draftIsRemoved;
   const missingIds = [
     !focusProblem.trim() ? 'focusProblem' : '',
-    !versions.length ? 'valueVersions' : '',
-    !selectedValue.trim() || !versions.includes(selectedValue.trim()) ? 'selectedValue' : '',
+    !activeVersions.length ? 'valueVersions' : '',
+    !selectedValue.trim() || !versions.includes(selectedValue.trim()) || removedVersions.includes(selectedValue.trim()) ? 'selectedValue' : '',
   ].filter(Boolean);
 
-  const generateSentence = () => {
-    if (!canGenerate) return;
-    const sentence = `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${outcome.trim()}。`;
-    onAnswer('focusProblem', focusProblem);
-    onAnswer('generatedDraft', sentence);
+  const updateProblem = (value: string) => {
+    onAnswer('focusProblem', value);
+    if (audience.trim() && value.trim() && outcome.trim()) {
+      onAnswer('generatedDraft', `我帮助${audience.trim()}解决“${value.trim()}”，让他能够${outcome.trim()}。`);
+    }
+  };
+
+  const updateOutcome = (value: string) => {
+    onAnswer('valueOutcome', value);
+    if (audience.trim() && focusProblem.trim() && value.trim()) {
+      onAnswer('generatedDraft', `我帮助${audience.trim()}解决“${focusProblem.trim()}”，让他能够${value.trim()}。`);
+    }
   };
 
   const addCandidate = () => {
     const sentence = draft.trim();
-    if (!sentence || versions.includes(sentence) || versions.length >= 5) return;
+    if (!sentence) return;
+    if (removedVersions.includes(sentence)) {
+      onAnswer('removedValueVersions', removedVersions.filter((version) => version !== sentence).join('\n'));
+      return;
+    }
+    if (versions.includes(sentence) || activeVersions.length >= 10) return;
     onAnswer('valueVersions', [...versions, sentence].join('\n'));
+  };
+
+  const startCandidateEdit = (version: string) => {
+    setEditingCandidate(version);
+    setCandidateEdit(version);
+  };
+
+  const saveCandidateEdit = () => {
+    const nextValue = candidateEdit.trim();
+    if (!editingCandidate || !nextValue || (nextValue !== editingCandidate && versions.includes(nextValue))) return;
+    onAnswer('valueVersions', versions.map((version) => version === editingCandidate ? nextValue : version).join('\n'));
+    if (removedVersions.includes(editingCandidate)) {
+      onAnswer('removedValueVersions', removedVersions.map((version) => version === editingCandidate ? nextValue : version).join('\n'));
+    }
+    if (selectedValue.trim() === editingCandidate) onAnswer('selectedValue', nextValue);
+    if (draft.trim() === editingCandidate) onAnswer('generatedDraft', nextValue);
+    setEditingCandidate('');
+    setCandidateEdit('');
+  };
+
+  const removeCandidate = (version: string) => {
+    if (removedVersions.includes(version)) return;
+    onAnswer('removedValueVersions', [...removedVersions, version].join('\n'));
+    if (selectedValue.trim() === version) onAnswer('selectedValue', '');
+    if (editingCandidate === version) {
+      setEditingCandidate('');
+      setCandidateEdit('');
+    }
   };
 
   return (
@@ -2139,7 +2193,7 @@ function DayFourSinglePage({
         <span className="task-number">01</span>
         <div>
           <div className="answer-row">
-            <span>本轮最想服务的人</span>
+            <span>最想服务的客户是：</span>
             <strong>{audience || '第 2 关暂未填写'}</strong>
           </div>
         </div>
@@ -2148,86 +2202,109 @@ function DayFourSinglePage({
       <section className="single-task-block">
         <span className="task-number">02</span>
         <div>
-          <h2>他们正在遇到的问题</h2>
-          <label className="sr-only" htmlFor="day-four-problem">选择一个客户卡点</label>
-          {problemOptions.length ? (
-            <select
-              id="day-four-problem"
-              className="full-select"
-              value={focusProblem}
-              onChange={(event) => onAnswer('focusProblem', event.target.value)}
+          <h2>开始造句</h2>
+          <div className="sentence-formula" aria-label="自我介绍句子公式">
+            <span>造句公式是：</span>
+            <p>我帮助【本轮服务的人】解决【选择的问题】，让他能够【得到的结果】。</p>
+          </div>
+          <div className="value-sentence-inputs">
+            <label>
+              <span>选择他们的问题</span>
+              {problemOptions.length ? (
+                <select
+                  id="day-four-problem"
+                  className="full-select"
+                  value={focusProblem}
+                  onChange={(event) => updateProblem(event.target.value)}
+                >
+                  {problemOptions.length > 1 && <option value="">请选择一个客户卡点</option>}
+                  {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
+                </select>
+              ) : (
+                <span className="empty-inline">第 3 关还没有卡点，请先返回补充。</span>
+              )}
+            </label>
+            <label>
+              <span>让他们得到什么样的结果</span>
+              <input
+                type="text"
+                value={outcome}
+                placeholder="例如：完成并发布第一条视频"
+                onChange={(event) => updateOutcome(event.target.value)}
+              />
+            </label>
+          </div>
+          <label className="sr-only" htmlFor="day-four-draft">编辑这句自我介绍</label>
+          <textarea
+            id="day-four-draft"
+            className="candidate-draft-textarea"
+            value={draft}
+            placeholder="选择问题并填写结果后，这里会自动拼成一句话，你也可以直接编辑。"
+            onChange={(event) => onAnswer('generatedDraft', event.target.value)}
+          />
+          <div className="center-action">
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={!draft.trim() || draftIsActive || (activeVersions.length >= 10 && !draftIsRemoved)}
+              onClick={addCandidate}
             >
-              {problemOptions.length > 1 && <option value="">请选择一个客户卡点</option>}
-              {problemOptions.map((problem) => <option value={problem} key={problem}>{problem}</option>)}
-            </select>
-          ) : (
-            <p className="empty-inline">第 3 关还没有卡点，请先返回补充。</p>
-          )}
+              {draftIsRemoved ? <>重新加入候选池 <span aria-hidden="true">→</span></> : activeVersions.length >= 10 ? '候选池已满 10 条' : draftIsActive ? '已加入候选池' : <>加入候选池 <span aria-hidden="true">→</span></>}
+            </button>
+          </div>
         </div>
       </section>
 
       <section className="single-task-block">
         <span className="task-number">03</span>
         <div>
-          <h2>让他们得到什么样的结果</h2>
-          <textarea
-            value={outcome}
-            placeholder="例如：完成并发布第一条视频"
-            onChange={(event) => onAnswer('valueOutcome', event.target.value)}
-          />
-          <div className="sentence-formula" aria-label="自我介绍句子公式">
-            <span>句子公式</span>
-            <p>我帮助【本轮服务的人】解决【选择的问题】，让他能够【得到的结果】。</p>
-          </div>
-          <div className="center-action">
-            <button className="secondary-button generate-button" type="button" disabled={!canGenerate} onClick={generateSentence}>
-              生成自我介绍 <span aria-hidden="true">→</span>
-            </button>
-          </div>
-
-          {draft && (
-            <div className="draft-editor">
-              <label htmlFor="day-four-draft">生成后可以自行编辑和完善</label>
-              <textarea
-                id="day-four-draft"
-                value={draft}
-                onChange={(event) => onAnswer('generatedDraft', event.target.value)}
-              />
-              <div className="center-action">
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={!draft.trim() || versions.includes(draft.trim()) || versions.length >= 5}
-                  onClick={addCandidate}
-                >
-                  {versions.length >= 5 ? '候选池已满 5 条' : versions.includes(draft.trim()) ? '已加入候选池' : <>加入候选池 <span aria-hidden="true">→</span></>}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="single-task-block">
-        <span className="task-number">04</span>
-        <div>
-          <h2>自我介绍候选池</h2>
+          <h2>候选池（建议 5–10 句，要很具体）</h2>
           <p>先选一版你最想立刻开始的。</p>
           {versions.length ? (
             <div className="introduction-pool">
-              {versions.map((version, index) => (
-                <button
-                  type="button"
+              {orderedVersions.map((version, index) => {
+                const removed = removedVersions.includes(version);
+                const editing = editingCandidate === version;
+                return (
+                <div
                   key={`${version}-${index}`}
-                  className={selectedValue.trim() === version ? 'introduction-candidate selected' : 'introduction-candidate'}
-                  aria-pressed={selectedValue.trim() === version}
-                  onClick={() => onAnswer('selectedValue', version)}
+                  className={`introduction-candidate${selectedValue.trim() === version ? ' selected' : ''}${removed ? ' removed' : ''}`}
                 >
                   <span>{index + 1}</span>
-                  <strong>{version}</strong>
-                  <small>{selectedValue.trim() === version ? '最终选择' : '点击选择'}</small>
-                </button>
-              ))}
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={candidateEdit}
+                      autoFocus
+                      onChange={(event) => setCandidateEdit(event.target.value)}
+                    />
+                  ) : (
+                    <button
+                      className="candidate-select-button"
+                      type="button"
+                      disabled={removed}
+                      aria-pressed={selectedValue.trim() === version}
+                      onClick={() => onAnswer('selectedValue', version)}
+                    >
+                      <strong>{version}</strong>
+                      <small>{removed ? '已移除' : selectedValue.trim() === version ? '最终选择' : '点击选择'}</small>
+                    </button>
+                  )}
+                  <div className="candidate-actions">
+                    {editing ? (
+                      <>
+                        <button type="button" onClick={saveCandidateEdit}>保存</button>
+                        <button type="button" onClick={() => setEditingCandidate('')}>取消</button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" disabled={removed} onClick={() => startCandidateEdit(version)}>编辑</button>
+                        <button type="button" disabled={removed} onClick={() => removeCandidate(version)}>{removed ? '已移除' : '移除'}</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );})}
             </div>
           ) : (
             <p className="empty-inline">生成并完善句子后，把它加入候选池。</p>
@@ -2365,19 +2442,22 @@ function DaySixSinglePage({
   const [optimizeError, setOptimizeError] = useState('');
   const [editingStatement, setEditingStatement] = useState(false);
   const earlierProblems = uniqueLines(answers[keyFor(3, 'topProblems')] ?? '');
+  const latestValueLine = answers[keyFor(4, 'selectedValue')]
+    || answers[keyFor(4, 'generatedDraft')]
+    || '';
+  const latestFitAudience = answers[keyFor(2, 'selectedAudience')] ?? '';
+  const latestEvidence = answers[keyFor(5, 'evidenceSentence')] ?? '';
   const valueLine = answers[keyFor(6, 'statementValue')]
-    ?? answers[keyFor(4, 'selectedValue')]
-    ?? answers[keyFor(6, 'firstStatement')]
-    ?? '';
+    || latestValueLine
+    || answers[keyFor(6, 'firstStatement')]
+    || '';
   const fitAudience = answers[keyFor(6, 'statementFit')]
-    ?? answers[keyFor(2, 'selectedAudience')]
-    ?? '';
+    || latestFitAudience;
   const problemValues = [0, 1, 2].map((index) => (
-    answers[keyFor(6, `statementProblem${index + 1}`)] ?? earlierProblems[index] ?? ''
+    answers[keyFor(6, `statementProblem${index + 1}`)] || earlierProblems[index] || ''
   ));
   const evidence = answers[keyFor(6, 'statementEvidence')]
-    ?? answers[keyFor(5, 'evidenceSentence')]
-    ?? '';
+    || latestEvidence;
   const optimizedStatement = answers[keyFor(6, 'optimizedStatement')] ?? '';
   const filledProblems = problemValues.map((item) => item.trim()).filter(Boolean);
   const assembled = [
@@ -2388,6 +2468,16 @@ function DaySixSinglePage({
   ].filter(Boolean).join('\n');
   const displayedStatement = optimizedStatement.trim() || assembled;
   const complete = Boolean(valueLine.trim() && fitAudience.trim() && filledProblems.length && evidence.trim());
+
+  const refreshFromPrevious = () => {
+    onAnswer('statementValue', latestValueLine);
+    onAnswer('statementFit', latestFitAudience);
+    [0, 1, 2].forEach((index) => onAnswer(`statementProblem${index + 1}`, earlierProblems[index] ?? ''));
+    onAnswer('statementEvidence', latestEvidence);
+    onAnswer('optimizedStatement', '');
+    onAnswer('firstStatement', '');
+    setEditingStatement(false);
+  };
 
   const optimizeStatement = async () => {
     if (!assembled.trim() || optimizing) return;
@@ -2434,6 +2524,9 @@ function DaySixSinglePage({
     <div className="single-day-form day-six-form">
       <section className="assembly-intro">
         <p>让我们一起看看目前你的答案，你可以进行措辞上的优化。</p>
+        <button className="secondary-button refresh-previous-button" type="button" onClick={refreshFromPrevious}>
+          重新获取前序数据 <span aria-hidden="true">↻</span>
+        </button>
       </section>
 
       <section className="single-task-block day-six-part tone-rose">
