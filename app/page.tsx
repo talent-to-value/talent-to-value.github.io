@@ -2820,7 +2820,7 @@ function DaySevenSinglePage({
           <p>先辨别反馈中哪部分可以优化——不是所有优化建议都要采纳。</p>
           <p>这个环节也可以把初稿、测试对象的反馈一同发给任意大模型，看看 AI 怎么说。</p>
           <details className="worksheet-help ai-prompt-panel">
-            <summary>打开通用 AI 分析提示词</summary>
+            <summary>点击展开，一键复制 AI 分析提示词</summary>
             <div className="copy-message">
               <p>{aiPrompt}</p>
               <button className="secondary-button" type="button" disabled={!testStatement} onClick={() => copyText(aiPrompt, 'prompt')}>
@@ -3253,8 +3253,10 @@ function DayElevenSinglePage({
         <span className="task-number">01</span>
         <div>
           <h2>从具体事情里，提炼你的判断</h2>
-          <p className="key-explanation">前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
-          <div className="cognition-formula"><span>句式是：</span><strong>“我以前……后来我发现……所以我现在……”</strong></div>
+          <div className="cognition-intro-panel">
+            <p className="key-explanation">前面整理的是你做过什么，以及这些事情带来了什么变化。接下来要从具体事情中抽离出来，写清楚这段经历让你形成了什么判断。</p>
+            <div className="cognition-formula"><span>句式是：</span><strong>“我以前……后来我发现……所以我现在……”</strong></div>
+          </div>
           <h3 className="example-section-title">下方是两个示例</h3>
 
           <div className="cognition-example-list">
@@ -3428,7 +3430,7 @@ function DayThirteenCombinedPage({
         <p>把前面整理的作品、实际变化和判断合在一起，再补充你的能力边界，生成一份让客户看懂“为什么可以信你”的说明。</p>
       </section>
 
-      <section className="single-task-block">
+      <section className="single-task-block representative-selection-block">
         <span className="task-number">01</span>
         <div>
           <h2>选出与「你要解决的问题」最相关的代表作品</h2>
@@ -3561,12 +3563,33 @@ function ThirdWeekWritingPage({
 }) {
   const config = contentWritingConfigs[dayNumber];
   const title = answers[keyFor(dayNumber, config.titleId)] ?? '';
+  const mergedDraft = [
+    title.trim(),
+    ...config.sections.map((section) => answers[keyFor(dayNumber, section.id)]?.trim() ?? ''),
+  ].filter(Boolean).join('\n\n');
+  const savedMergedArticle = answers[keyFor(dayNumber, 'mergedArticle')];
+  const savedMergedSource = answers[keyFor(dayNumber, 'mergedArticleSource')] ?? '';
+  const mergedArticle = savedMergedArticle === undefined || savedMergedSource !== mergedDraft
+    ? mergedDraft
+    : savedMergedArticle;
   const missingIds = [
     title.trim() ? '' : config.titleId,
     ...config.sections.map((section) => (
       answers[keyFor(dayNumber, section.id)]?.trim() ? '' : section.id
     )),
+    mergedArticle.trim() ? '' : 'mergedArticle',
   ].filter(Boolean);
+
+  const updateMergedArticle = (value: string) => {
+    onAnswer('mergedArticleSource', mergedDraft);
+    onAnswer('mergedArticle', value);
+  };
+
+  const saveAndContinue = () => {
+    onAnswer('mergedArticleSource', mergedDraft);
+    onAnswer('mergedArticle', mergedArticle);
+    onSubmit(missingIds);
+  };
   return (
     <div className="single-day-form third-week-writing-form">
       <section className="single-task-block content-writing-guide">
@@ -3607,7 +3630,7 @@ function ThirdWeekWritingPage({
         <span className="task-number">03</span>
         <div>
           <h2>开始写正文</h2>
-          <p className="content-word-guide">字数建议：200–500 字</p>
+          <p className="content-word-guide">总字数建议：200–500 字</p>
           <div className="content-paragraph-list">
             {config.sections.map((section) => (
               <label key={section.id}>
@@ -3623,8 +3646,24 @@ function ThirdWeekWritingPage({
         </div>
       </section>
 
+      <section className="single-task-block content-merged-section">
+        <span className="task-number">04</span>
+        <div>
+          <h2>整理成一篇完整文章</h2>
+          <p>标题和正文已经按照文章格式合并，你可以在这里继续修改。</p>
+          <AutoGrowTextarea
+            className="content-merged-editor"
+            value={mergedArticle}
+            aria-label={`${config.name}完整文章`}
+            placeholder="完成上方标题和正文后，这里会自动合并成一篇完整文章。"
+            onChange={(event) => updateMergedArticle(event.target.value)}
+          />
+          <small className="content-ai-polish-note">也可以使用 AI 辅助润色。</small>
+        </div>
+      </section>
+
       <div className="single-day-submit submit-only">
-        <button className="main-button" type="button" onClick={() => onSubmit(missingIds)}>
+        <button className="main-button" type="button" onClick={saveAndContinue}>
           {previewMode ? `保存草稿，返回 ${getVisibleStep(firstIncomplete).label} →` : '进入下一关 →'}
         </button>
       </div>
@@ -3643,29 +3682,34 @@ function DayTwentyAuditPage({
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const finalArticles = Object.entries(contentWritingConfigs).map(([day, config]) => {
+  const sourceArticles = Object.entries(contentWritingConfigs).map(([day, config]) => {
     const dayNumber = Number(day);
-    const finalId = `finalArticle${dayNumber}`;
     const mergedDraft = [
       answers[keyFor(dayNumber, config.titleId)]?.trim() ?? '',
       ...config.sections.map((section) => answers[keyFor(dayNumber, section.id)]?.trim() ?? ''),
     ].filter(Boolean).join('\n\n');
+    const savedMergedArticle = answers[keyFor(dayNumber, 'mergedArticle')];
+    const savedMergedSource = answers[keyFor(dayNumber, 'mergedArticleSource')] ?? '';
     return {
       dayNumber,
-      finalId,
       name: config.name,
-      value: answers[keyFor(20, finalId)] === undefined
+      value: savedMergedArticle === undefined || savedMergedSource !== mergedDraft
         ? mergedDraft
+        : savedMergedArticle,
+    };
+  });
+  const finalArticles = sourceArticles.map((article) => {
+    const finalId = `finalArticle${article.dayNumber}`;
+    return {
+      ...article,
+      finalId,
+      value: answers[keyFor(20, finalId)] === undefined
+        ? article.value
         : answers[keyFor(20, finalId)],
     };
   });
-  const articles = Object.entries(contentWritingConfigs).map(([day, config]) => {
-    const dayNumber = Number(day);
-    const title = answers[keyFor(dayNumber, config.titleId)]?.trim() || '（未填写）';
-    const body = config.sections.map((section) => (
-      `${section.label}\n${answers[keyFor(dayNumber, section.id)]?.trim() || '（未填写）'}`
-    )).join('\n\n');
-    return `【第 ${dayNumber} 天·${config.name}】\n标题：${title}\n\n${body}`;
+  const articles = finalArticles.map((article) => {
+    return `【${article.name}】\n${article.value.trim() || '（未填写）'}`;
   }).join('\n\n--------------------\n\n');
 
   const auditPrompt = `请帮我对下面 5 篇内容做一次宽松的整体检查。
@@ -3718,6 +3762,12 @@ ${articles}`;
     onSubmit();
   };
 
+  const refreshFromPrevious = () => {
+    sourceArticles.forEach((article) => {
+      onAnswer(`finalArticle${article.dayNumber}`, article.value);
+    });
+  };
+
   return (
     <div className="single-day-form day-twenty-audit-form">
       <section className="single-task-block audit-purpose-section">
@@ -3763,8 +3813,15 @@ ${articles}`;
       <section className="single-task-block audit-final-section">
         <span className="task-number">03</span>
         <div>
-          <h2>最终版保存</h2>
-          <p>在这里优化出最终版，可以利用 AI 来优化。</p>
+          <div className="audit-final-heading">
+            <div>
+              <h2>最终版保存</h2>
+              <p>在这里优化出最终版，可以利用 AI 来优化。</p>
+            </div>
+            <button className="secondary-button refresh-previous-button" type="button" onClick={refreshFromPrevious}>
+              重新获取前序数据 <span aria-hidden="true">↻</span>
+            </button>
+          </div>
           <div className="audit-final-article-list">
             {finalArticles.map((article) => (
               <article className="audit-final-article" key={article.dayNumber}>
