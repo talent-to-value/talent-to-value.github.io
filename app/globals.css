@@ -322,6 +322,11 @@ select:focus-visible {
     transform: translate(-5px, -69px);
   }
 
+  .home-shell .home-hero-copy h1 {
+    font-size: clamp(38px, 3.7vw, 54px);
+    white-space: nowrap;
+  }
+
   .home-shell .home-question-card {
     width: calc(100% + 48px);
     transform: translate(-13px, -59px);
