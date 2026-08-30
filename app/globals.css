@@ -1,3 +1,5 @@
+@import url("./noto-serif-sc.css");
+
 :root {
   --paper: #f4eedf;
   --paper-light: #fffaf0;
@@ -7,7 +9,7 @@
   --pink: #d980a2;
   --pink-soft: #d980a2;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --serif: "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
+  --serif: "Noto Serif SC", "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
 }
 
 * {
