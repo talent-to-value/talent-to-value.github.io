@@ -232,6 +232,7 @@ select:focus-visible {
   border-color: var(--paper-light);
   background: var(--pink-soft);
   box-shadow: 10px 10px 0 rgba(255, 250, 240, 0.9);
+  font-family: var(--serif);
 }
 
 .home-shell .home-hero {
@@ -258,6 +259,7 @@ select:focus-visible {
 }
 
 .home-shell .home-masthead {
+  font-family: var(--serif);
   font-size: 15px;
 }
 
