@@ -210,7 +210,7 @@ select:focus-visible {
   align-items: flex-start;
   gap: 7px;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.55;
 }
@@ -5040,7 +5040,7 @@ select:focus-visible {
     align-items: stretch;
     flex-direction: column;
     gap: 4px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .overview-heading {
