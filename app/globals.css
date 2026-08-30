@@ -198,15 +198,18 @@ select:focus-visible {
 }
 
 .home-source-footer {
-  min-height: 72px;
-  padding: 14px 150px;
+  width: min(680px, calc(100% - 190px));
+  min-height: 52px;
+  padding: 0;
+  position: absolute;
+  left: 0;
+  bottom: 34px;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-start;
   gap: 4px 24px;
-  border-top: 1px solid var(--ink);
-  text-align: center;
+  text-align: left;
   font-size: 12px;
   font-weight: 750;
   line-height: 1.6;
@@ -4999,8 +5002,11 @@ select:focus-visible {
   }
 
   .home-source-footer {
+    width: auto;
     min-height: 0;
+    margin-top: 24px;
     padding: 18px 0 calc(68px + env(safe-area-inset-bottom));
+    position: static;
     align-items: stretch;
     flex-direction: column;
     gap: 4px;

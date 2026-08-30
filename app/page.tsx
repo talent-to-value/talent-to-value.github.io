@@ -958,16 +958,63 @@ function DataSafetyDialog({
 }
 
 function AboutToolDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus?.isConnected) window.requestAnimationFrame(() => previousFocus.focus());
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
-    <div className="data-safety-overlay about-tool-overlay" role="dialog" aria-modal="true" aria-labelledby="about-tool-title">
-      <section className="data-safety-dialog about-tool-dialog">
+    <div className="data-safety-overlay about-tool-overlay">
+      <section
+        ref={dialogRef}
+        className="data-safety-dialog about-tool-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-tool-title"
+      >
         <header>
           <div>
             <span>ABOUT THIS TOOL</span>
             <h2 id="about-tool-title">关于这套工具</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭关于这套工具">关闭</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="关闭关于这套工具">关闭</button>
         </header>
         <dl className="about-tool-facts">
           <div>
@@ -1640,11 +1687,11 @@ export default function Home() {
             <button className="main-button home-start-button" type="button" onClick={() => setView('overview')}>
               开始 <span aria-hidden="true">→</span>
             </button>
+            <footer className="home-source-footer">
+              <p>内容参考：<a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer">《把才华变成钱》</a> · 作者：王梦珂Mengke</p>
+              <p>工具整理：雨眠 · 微信公众号：Yan yard</p>
+            </footer>
           </div>
-          <footer className="home-source-footer">
-            <p>内容参考：<a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer">《把才华变成钱》</a> · 作者：王梦珂Mengke</p>
-            <p>工具整理：雨眠 · 微信公众号：Yan yard</p>
-          </footer>
             <button className="data-safety-trigger" type="button" onClick={() => setBackupOpen(true)}>备份与恢复</button>
           </section>
         </main>
@@ -1710,7 +1757,6 @@ export default function Home() {
               setBackupOpen(true);
             }}
             onAbout={() => {
-              setLevelsOpen(false);
               setAboutOpen(true);
             }}
           />
@@ -2142,7 +2188,6 @@ export default function Home() {
           setBackupOpen(true);
         }}
         onAbout={() => {
-          setLevelsOpen(false);
           setAboutOpen(true);
         }}
       />
