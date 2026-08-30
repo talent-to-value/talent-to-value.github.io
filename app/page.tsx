@@ -1176,6 +1176,14 @@ export default function Home() {
   }, [levelsOpen]);
 
   useEffect(() => {
+    if (view !== 'day' || !window.matchMedia('(max-width: 900px)').matches) return;
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentDay, view]);
+
+  useEffect(() => {
     if (!backupOpen) return;
     const close = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setBackupOpen(false);
@@ -2399,7 +2407,7 @@ function DayFourSinglePage({
         <div>
           <div className="answer-row">
             <span>最想服务的客户是：</span>
-            <strong>{audience || '1.2 暂未填写'}</strong>
+            <strong>{audience || '暂未填写'}</strong>
           </div>
         </div>
       </section>
