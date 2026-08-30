@@ -296,8 +296,14 @@ select:focus-visible {
 }
 
 .home-shell .pain-list li::before {
-  color: var(--pink);
-  font-size: 28px;
+  content: "";
+  width: 8px;
+  height: 8px;
+  top: 50%;
+  left: 16px;
+  border-radius: 50%;
+  background: var(--pink);
+  transform: translate(-50%, -50%);
 }
 
 @media (min-width: 1101px) {
