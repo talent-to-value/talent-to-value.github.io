@@ -321,7 +321,7 @@ select:focus-visible {
   .home-shell .home-hero-copy {
     align-items: flex-start;
     text-align: left;
-    transform: translate(-5px, -69px);
+    transform: translate(-5px, -86px);
   }
 
   .home-shell .home-hero-copy h1 {
@@ -331,11 +331,11 @@ select:focus-visible {
 
   .home-shell .home-question-card {
     width: calc(100% + 48px);
-    transform: translate(-13px, -59px);
+    transform: translate(-15px, -40px);
   }
 
   .home-shell .home-start-button {
-    transform: translate(-13px, 16px);
+    transform: translate(11px, -4px);
   }
 
 }
