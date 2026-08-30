@@ -957,12 +957,48 @@ function DataSafetyDialog({
   );
 }
 
+function AboutToolDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div className="data-safety-overlay about-tool-overlay" role="dialog" aria-modal="true" aria-labelledby="about-tool-title">
+      <section className="data-safety-dialog about-tool-dialog">
+        <header>
+          <div>
+            <span>ABOUT THIS TOOL</span>
+            <h2 id="about-tool-title">关于这套工具</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭关于这套工具">关闭</button>
+        </header>
+        <dl className="about-tool-facts">
+          <div>
+            <dt>内容参考</dt>
+            <dd>
+              <strong>《把才华变成钱》</strong>
+              <a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer">PDF 下载 ↗</a>
+            </dd>
+          </div>
+          <div>
+            <dt>原书作者</dt>
+            <dd><strong>王梦珂Mengke</strong><span>全平台账号：王梦珂Mengke</span></dd>
+          </div>
+          <div>
+            <dt>工具整理</dt>
+            <dd><strong>雨眠</strong><span>微信公众号：Yan yard</span></dd>
+          </div>
+        </dl>
+        <p className="about-tool-note">本工具基于《把才华变成钱》进行个人整理与交互化呈现，并非原作者官方产品。</p>
+      </section>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<View>('intro');
   const [currentDay, setCurrentDay] = useState(1);
   const [previewMode, setPreviewMode] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
@@ -1196,6 +1232,20 @@ export default function Home() {
       window.removeEventListener('keydown', close);
     };
   }, [backupOpen]);
+
+  useEffect(() => {
+    if (!aboutOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAboutOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', close);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', close);
+    };
+  }, [aboutOpen]);
 
   const progressState = (answerOverrides: AnswerMap = {}): SavedState => ({
     answers: { ...answers, ...answerOverrides },
@@ -1560,6 +1610,7 @@ export default function Home() {
       onImport={(file) => void importBackup(file)}
     />
   );
+  const aboutDialog = <AboutToolDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />;
 
   if (!hydrated) return <main className="mvp-home" aria-busy="true" />;
 
@@ -1590,10 +1641,15 @@ export default function Home() {
               开始 <span aria-hidden="true">→</span>
             </button>
           </div>
+          <footer className="home-source-footer">
+            <p>内容参考：<a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer">《把才华变成钱》</a> · 作者：王梦珂Mengke</p>
+            <p>工具整理：雨眠 · 微信公众号：Yan yard</p>
+          </footer>
             <button className="data-safety-trigger" type="button" onClick={() => setBackupOpen(true)}>备份与恢复</button>
           </section>
         </main>
         {backupDialog}
+        {aboutDialog}
       </>
     );
   }
@@ -1653,9 +1709,14 @@ export default function Home() {
               setLevelsOpen(false);
               setBackupOpen(true);
             }}
+            onAbout={() => {
+              setLevelsOpen(false);
+              setAboutOpen(true);
+            }}
           />
         </main>
         {backupDialog}
+        {aboutDialog}
       </>
     );
   }
@@ -1871,6 +1932,7 @@ export default function Home() {
         onSelectStage={navigateToStage}
         onSelect={navigateToDay}
         onBackup={() => setBackupOpen(true)}
+        onAbout={() => setAboutOpen(true)}
       />
 
       <section className="day-workspace">
@@ -2079,9 +2141,14 @@ export default function Home() {
           setLevelsOpen(false);
           setBackupOpen(true);
         }}
+        onAbout={() => {
+          setLevelsOpen(false);
+          setAboutOpen(true);
+        }}
       />
     </main>
     {backupDialog}
+    {aboutDialog}
     </>
   );
 }
@@ -4843,6 +4910,7 @@ function DaySidebar({
   onSelectStage,
   onSelect,
   onBackup,
+  onAbout,
 }: {
   currentDay: number;
   answers: AnswerMap;
@@ -4853,6 +4921,7 @@ function DaySidebar({
   onSelectStage: (stage: number) => void;
   onSelect: (day: number) => void;
   onBackup: () => void;
+  onAbout: () => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
 
@@ -4866,6 +4935,7 @@ function DaySidebar({
         <button type="button" onClick={onHome}>教你如何把才华变成钱</button>
         <span>{visibleDays.filter((day) => completed[String(day.day)]).length} / {visibleDays.length} 已推进</span>
         <button className="sidebar-backup-button" type="button" onClick={onBackup}>备份与恢复</button>
+        <button className="sidebar-about-button" type="button" onClick={onAbout}>关于这套工具</button>
       </header>
       <div className="sidebar-progress" aria-hidden="true">
         <span style={{ width: `${(visibleDays.filter((day) => completed[String(day.day)]).length / visibleDays.length) * 100}%` }} />
@@ -4908,6 +4978,7 @@ function LevelList({
   onClose,
   onSelect,
   onBackup,
+  onAbout,
 }: {
   open: boolean;
   answers: AnswerMap;
@@ -4917,6 +4988,7 @@ function LevelList({
   onClose: () => void;
   onSelect: (day: number) => void;
   onBackup: () => void;
+  onAbout: () => void;
 }) {
   if (!open) return null;
   return (
@@ -4929,7 +5001,10 @@ function LevelList({
           </div>
           <button type="button" onClick={onClose} aria-label="关闭关卡列表">关闭</button>
         </header>
-        <button className="level-backup-button" type="button" onClick={onBackup}>备份与恢复</button>
+        <div className="level-tool-actions">
+          <button className="level-backup-button" type="button" onClick={onBackup}>备份与恢复</button>
+          <button className="level-about-button" type="button" onClick={onAbout}>关于这套工具</button>
+        </div>
         <div className="level-list">
           {visibleDays.map((day) => {
             const status = dayStatus(day.day, answers, completed, deferred, firstIncomplete);

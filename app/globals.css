@@ -197,6 +197,30 @@ select:focus-visible {
   font-weight: 750;
 }
 
+.home-source-footer {
+  min-height: 72px;
+  padding: 14px 150px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 24px;
+  border-top: 1px solid var(--ink);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.home-source-footer p {
+  margin: 0;
+}
+
+.home-source-footer a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
 .home-shell {
   background: var(--ink);
 }
@@ -461,12 +485,14 @@ select:focus-visible {
   text-align: right;
 }
 
-.day-sidebar > header .sidebar-backup-button {
-  flex: 0 0 100%;
+.day-sidebar > header .sidebar-backup-button,
+.day-sidebar > header .sidebar-about-button {
+  flex: 1 1 calc(50% - 6px);
   color: var(--pink);
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .data-safety-trigger {
@@ -4539,6 +4565,63 @@ select:focus-visible {
   font-weight: 800;
 }
 
+.about-tool-facts {
+  margin: 22px 0 0;
+  border-top: 1px solid var(--ink);
+}
+
+.about-tool-facts > div {
+  padding: 18px 0;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-tool-facts dt {
+  color: #a74868;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.about-tool-facts dd {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  line-height: 1.65;
+}
+
+.about-tool-facts dd strong {
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.about-tool-facts dd span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.about-tool-facts a {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 850;
+  text-underline-offset: 4px;
+}
+
+.about-tool-note {
+  margin: 22px 0 0;
+  padding: 16px 18px;
+  border-left: 6px solid var(--ink);
+  background: var(--pink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.75;
+}
+
 .data-safety-intro {
   margin: 22px 0 0;
   padding: 18px 20px;
@@ -4613,16 +4696,26 @@ select:focus-visible {
   background: var(--paper);
 }
 
-.level-backup-button {
+.level-tool-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.level-backup-button,
+.level-about-button {
   min-height: 46px;
   padding: 0 24px;
   border: 0;
-  border-bottom: 1px solid var(--line);
   background: var(--pink-soft);
   color: var(--ink);
   text-align: left;
   font-size: 13px;
   font-weight: 850;
+}
+
+.level-backup-button {
+  border-right: 1px solid var(--ink);
 }
 
 .level-panel > header {
@@ -4903,6 +4996,15 @@ select:focus-visible {
   .home-footer {
     min-height: 70px;
     font-size: 11px;
+  }
+
+  .home-source-footer {
+    min-height: 0;
+    padding: 18px 0 calc(68px + env(safe-area-inset-bottom));
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
   }
 
   .overview-heading {
@@ -5232,6 +5334,17 @@ select:focus-visible {
 
   .data-safety-dialog h2 {
     font-size: 28px;
+  }
+
+  .about-tool-facts > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .about-tool-facts dd {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .data-safety-actions {
