@@ -1207,13 +1207,6 @@ export default function Home() {
         setCompleted(savedCompleted);
         setDeferred(savedDeferred);
         setCurrentDay(resumeDay);
-        if (
-          Object.keys(savedAnswers).some((key) => savedAnswers[key])
-          || Object.values(savedCompleted).some(Boolean)
-          || Object.values(savedDeferred).some(Boolean)
-        ) {
-          setView(nextDay ? 'day' : 'overview');
-        }
       }
       } catch {
         if (active) setBackupMessage('没有读取到可用的本地进度，可以导入以前下载的备份。');
