@@ -1688,8 +1688,12 @@ export default function Home() {
               开始 <span aria-hidden="true">→</span>
             </button>
             <footer className="home-source-footer">
-              <p>内容参考：<a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer">《把才华变成钱》</a> · 作者：王梦珂Mengke</p>
-              <p>工具整理：雨眠 · 微信公众号：Yan yard</p>
+              <p>
+                <strong>内容参考：</strong>
+                <a href="https://haoshiyinli.com/book" target="_blank" rel="noreferrer"><strong>《把才华变成钱》</strong></a>
+                <strong> ｜ 作者：王梦珂Mengke</strong>
+              </p>
+              <p><strong>工具整理：雨眠 ｜ 微信公众号：Yan yard</strong></p>
             </footer>
           </div>
             <button className="data-safety-trigger" type="button" onClick={() => setBackupOpen(true)}>备份与恢复</button>
