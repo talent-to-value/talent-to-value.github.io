@@ -3640,6 +3640,10 @@ select:focus-visible {
   background: var(--ink);
 }
 
+.week-complete-page {
+  font-family: var(--serif);
+}
+
 .week-checklist-page {
   display: block;
   padding-top: 64px;
