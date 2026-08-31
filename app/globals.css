@@ -280,8 +280,23 @@ select:focus-visible {
 }
 
 .home-shell .home-question-card .home-card-label {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(36, 69, 44, 0.35);
   color: var(--ink);
   font-size: 17px;
+  font-weight: 900;
+}
+
+.home-story-copy {
+  margin: auto 0;
+  display: grid;
+  gap: 22px;
+  font-size: 19px;
+  line-height: 1.85;
+}
+
+.home-story-copy p {
+  margin: 0;
 }
 
 .home-shell .pain-list {
@@ -366,6 +381,11 @@ select:focus-visible {
   .home-shell .pain-list li {
     padding-top: 18px;
     padding-bottom: 18px;
+  }
+
+  .home-shell .home-story-copy {
+    gap: 16px;
+    font-size: 17px;
   }
 }
 
@@ -5046,6 +5066,12 @@ select:focus-visible {
 
   .home-shell .pain-list li {
     font-size: 17px;
+  }
+
+  .home-shell .home-story-copy {
+    gap: 18px;
+    font-size: 17px;
+    line-height: 1.9;
   }
 
   .home-hero-copy h1,

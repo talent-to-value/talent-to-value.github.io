@@ -1669,13 +1669,13 @@ export default function Home() {
               <h1>教你如何把才华变成钱</h1>
               <p>把脑子里模糊的能力，一步步整理成别人看得懂、愿意相信、可以买到的服务或产品。</p>
             </div>
-            <aside className="home-question-card" aria-label="你可能正在面对的问题">
-              <span className="home-card-label">从你的真实需求开始</span>
-              <ul className="pain-list">
-                <li>你有没有想过把自己的能力变成一个服务或者一项产品？</li>
-                <li>到底是什么阻碍了你？还是说你已经在做了但效果不好？</li>
-                <li>今天我们可以通过这个工具来理清楚。</li>
-              </ul>
+            <aside className="home-question-card" aria-label="让你的才华真正被看见">
+              <strong className="home-card-label">让你的才华真正被看见</strong>
+              <div className="home-story-copy">
+                <p>想象一下你在沙漠里开了一间装满珍宝的店，却没有挂招牌。路人只能看见里面亮着灯，却不知道你有什么，更不知道为什么要走进来。</p>
+                <p>很多人的才华也是如此——你并不缺能力，只是还没有把它翻译成别人看得懂、愿意相信、可以买到的价值。</p>
+                <p>这套工具会用四周帮你挂上那块招牌，让真正需要你的人找到你。</p>
+              </div>
             </aside>
             <button className="main-button home-start-button" type="button" onClick={() => setView('overview')}>
               开始 <span aria-hidden="true">→</span>
