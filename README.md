@@ -1,5 +1,7 @@
 # 教你如何把才华变成钱
 
+**简体中文** | [English](README_EN.md)
+
 一套可以真正动手完成的引导工具：用四周、28 个循序渐进的关卡，把脑子里模糊的能力，整理成别人看得懂、愿意相信、可以买到的服务或产品。
 
 **在线使用：** [https://talent-to-value.github.io](https://talent-to-value.github.io)
@@ -40,9 +42,9 @@
 - 清理浏览器数据、更换设备或卸载浏览器前，请先使用页面中的“备份与恢复”功能下载 JSON 备份。
 - 导入备份会用备份文件中的进度替换当前页面进度，操作前请确认文件正确。
 
-## 本地开发
+## 开发与部署
 
-环境要求：Node.js 22.13.0 或更高版本。
+项目使用 Next.js 16、React 19、TypeScript、Vinext 和 Vite，静态部署在 GitHub Pages。开发环境需要 Node.js 22.13.0 或更高版本。
 
 ```bash
 npm ci
@@ -57,18 +59,7 @@ npm run build:pages
 ```
 
 `npm run build:pages` 会生成用于静态部署的 `out/` 目录。
-
-## 技术与部署
-
-- Next.js 16
-- React 19
-- TypeScript
-- Vinext + Vite
-- 静态导出
-- GitHub Pages
-- 自托管 Noto Serif SC 字体资源
-
-仓库中的 `main` 分支保存项目源码，`gh-pages` 分支保存 GitHub Pages 使用的静态构建文件。当前没有自动部署工作流；发布时使用 `npm run build:pages` 生成 `out/`，再将静态文件同步到 `gh-pages` 分支根目录，并保留 `.nojekyll` 文件。
+仓库中的 `main` 分支保存源码，`gh-pages` 分支保存静态站点。当前没有自动部署工作流；发布时将 `out/` 同步到 `gh-pages` 分支根目录，并保留 `.nojekyll` 文件。
 
 ## 主要目录
 
